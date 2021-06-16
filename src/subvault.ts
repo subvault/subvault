@@ -21,7 +21,11 @@ const handleArgv = (argv, handlers): any => {
     let matchArgIndex = 0;
     const matchedValue = {};
 
-    handler.command.forEach((commandItem) => {
+    let handlerCommand = handler.command;
+    if (typeof handlerCommand === "string") {
+      handlerCommand = handlerCommand.split(" ");
+    }
+    handlerCommand.forEach((commandItem) => {
       if (!matched) {
         return;
       }
@@ -73,7 +77,7 @@ const handleArgv = (argv, handlers): any => {
 const processCommand = async (db, api, argv) => {
   await handleArgv(argv, [
     { 
-      command: ["import", "external", "<address>"],
+      command: "import external <address>",
       handle: async (matched) => {
         const address = matched.address;
         importExternal(db, address);
@@ -81,7 +85,7 @@ const processCommand = async (db, api, argv) => {
       }
     },
     {
-      command: ["balance", "[address]"],
+      command: "balance [address]",
       handle: async (matched) => {
         for (const address of getAllAddresses(db)) {
           const account = await api.query.system.account(address);
@@ -91,7 +95,13 @@ const processCommand = async (db, api, argv) => {
           console.log(`${address}: ${totalHuman}`);
         }
       }
-    }
+    },
+    {
+      command: "exit",
+      handle: async (matched) => {
+        process.exit(0);
+      }
+    },
   ]);
 };
 

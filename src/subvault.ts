@@ -87,12 +87,20 @@ const processCommand = async (db, api, argv) => {
     {
       command: "balance [address]",
       handle: async (matched) => {
-        for (const address of getAllAddresses(db)) {
-          const account = await api.query.system.account(address);
+        if (matched.address) {
+          const account = await api.query.system.account(matched.address);
           const total = account.data.free
             .add(account.data.reserved);
           const totalHuman = total.div(new BN(1_000_000_000_0)).toNumber();
-          console.log(`${address}: ${totalHuman}`);
+          console.log(`${matched.address}: ${totalHuman}`);
+        } else {
+          for (const address of getAllAddresses(db)) {
+            const account = await api.query.system.account(address);
+            const total = account.data.free
+              .add(account.data.reserved);
+            const totalHuman = total.div(new BN(1_000_000_000_0)).toNumber();
+            console.log(`${address}: ${totalHuman}`);
+          }
         }
       }
     },
@@ -121,6 +129,7 @@ const main = async () => {
 
   const api = await ApiPromise.create({
     provider: wsProvider,
+    throwOnConnect: true,
   });
 
   rl.prompt();

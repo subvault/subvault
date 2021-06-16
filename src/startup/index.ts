@@ -12,18 +12,18 @@ type CreateVaultOptions = {
   networkName: string,
 };
 
-export const currentApplicationId = (db: sqlite3.Database): number => {
+export function currentApplicationId(db: sqlite3.Database): number {
   return db.pragma("application_id")[0].application_id;
 };
 
-const checkVault = (db: sqlite3.Database) => {
+function checkVault(db: sqlite3.Database) {
   assert.strictEqual(currentApplicationId(db), APPLICATION_ID);
   assert.strictEqual(currentVersion(db), LATEST_VERSION);
   assert(typeof metadata.getNetworkId(db), "number");
   assert(typeof metadata.getNetworkName(db), "string");
 };
 
-export const createVault = (path: string, options: CreateVaultOptions): sqlite3.Database => {
+export function createVault(path: string, options: CreateVaultOptions): sqlite3.Database {
   const db = new Database(path);
 
   db.pragma(`application_id = ${APPLICATION_ID}`);
@@ -40,11 +40,11 @@ export const createVault = (path: string, options: CreateVaultOptions): sqlite3.
   return db;
 };
 
-export const openVault = (path: string): sqlite3.Database => {
+export function openVault(path: string): sqlite3.Database {
   const db = new Database(path, { fileMustExist: true });
 
   migrate(db);
   checkVault(db);
-  
+
   return db;
 }

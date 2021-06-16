@@ -5,6 +5,6 @@ import Database, * as sqlite3 from "better-sqlite3";
 import * as keyring from "@polkadot/keyring";
 import { getNetworkId } from "./metadata";
 
-export const decodeAddress = (db: sqlite3.Database, address: string): Uint8Array => {
+export function decodeAddress(db: sqlite3.Database, address: string): Uint8Array {
   return keyring.decodeAddress(address, false, getNetworkId(db))
 };

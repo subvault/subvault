@@ -23,11 +23,11 @@ for (const migration of MIGRATIONS) {
   INDEXED_MIGRATIONS[migration.fromVersion] = migration;
 }
 
-export const currentVersion = (db: sqlite3.Database) => {
+export function currentVersion(db: sqlite3.Database) {
   return db.pragma("user_version")[0].user_version;
 };
 
-export const migrate = (db: sqlite3.Database) => {
+export function migrate(db: sqlite3.Database) {
   while (currentVersion(db) != LATEST_VERSION) {
     const migration = INDEXED_MIGRATIONS[currentVersion(db)];
     db.transaction(() => {

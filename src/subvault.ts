@@ -4,8 +4,9 @@
 import Database, * as sqlite3 from "better-sqlite3";
 import readline from "readline";
 import yargsParser from "yargs-parser";
-const { ApiPromise, WsProvider } = require('@polkadot/api');
-const BN = require('bn.js');
+import { ApiPromise, WsProvider } from "@polkadot/api";
+import { formatBalance } from "@polkadot/util";
+import BN from "bn.js";
 import { createVault, openVault } from "./startup";
 import { getNetworkId, getNetworkName } from "./metadata";
 import { importExternal, getAllAddresses } from "./wallet";
@@ -15,7 +16,7 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const handleArgv = (argv, handlers): any => {
+function handleArgv(argv, handlers): any {
   for (const handler of handlers) {
     let matched = true;
     let matchArgIndex = 0;
@@ -74,7 +75,7 @@ const handleArgv = (argv, handlers): any => {
   console.log("Invalid command");
 };
 
-const processCommand = async (db, api, argv) => {
+async function processCommand(db, api, argv) {
   await handleArgv(argv, [
     { 
       command: "import external <address>",
@@ -88,11 +89,9 @@ const processCommand = async (db, api, argv) => {
       command: "balance [address]",
       handle: async (matched) => {
         if (matched.address) {
-          const account = await api.query.system.account(matched.address);
-          const total = account.data.free
-            .add(account.data.reserved);
-          const totalHuman = total.div(new BN(1_000_000_000_0)).toNumber();
-          console.log(`${matched.address}: ${totalHuman}`);
+          const account = await api.derive.balances.all(matched.address);
+          const balanceTotal = account.freeBalance.add(account.reservedBalance);
+          console.log(`${matched.address}: ${formatBalance(balanceTotal)}`);
         } else {
           for (const address of getAllAddresses(db)) {
             const account = await api.query.system.account(address);
@@ -113,7 +112,7 @@ const processCommand = async (db, api, argv) => {
   ]);
 };
 
-const main = async () => {
+async function main() {
   const argv = yargsParser(process.argv.slice(2));
 
   let db: sqlite3.Database;
@@ -130,6 +129,10 @@ const main = async () => {
   const api = await ApiPromise.create({
     provider: wsProvider,
     throwOnConnect: true,
+  });
+
+  api.on("ready", (): void => {
+    
   });
 
   rl.prompt();

@@ -6,10 +6,12 @@ import readline from "readline";
 import yargsParser from "yargs-parser";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
+import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import BN from "bn.js";
 import { createVault, openVault } from "./startup";
 import { getNetworkId, getNetworkName } from "./metadata";
 import { importExternal, getAllAddresses } from "./wallet";
+import registry from "./registry";
 
 const rl = readline.createInterface({
   input: process.stdin,
@@ -88,18 +90,17 @@ async function processCommand(db, api, argv) {
     {
       command: "balance [address]",
       handle: async (matched) => {
+        let addresses;
         if (matched.address) {
-          const account = await api.derive.balances.all(matched.address);
-          const balanceTotal = account.freeBalance.add(account.reservedBalance);
-          console.log(`${matched.address}: ${formatBalance(balanceTotal)}`);
+          addresses = [ matched.address ];
         } else {
-          for (const address of getAllAddresses(db)) {
-            const account = await api.query.system.account(address);
-            const total = account.data.free
-              .add(account.data.reserved);
-            const totalHuman = total.div(new BN(1_000_000_000_0)).toNumber();
-            console.log(`${address}: ${totalHuman}`);
-          }
+          addresses = getAllAddresses(db);
+        }
+
+        for (const address of addresses) {
+          const account = await api.derive.balances.all(address);
+          const balanceTotal = account.freeBalance.add(account.reservedBalance);
+          console.log(`${address}: ${formatBalance(balanceTotal)}`);
         }
       }
     },
@@ -111,6 +112,34 @@ async function processCommand(db, api, argv) {
     },
   ]);
 };
+
+async function retrieve (api: ApiPromise): Promise<any> {
+  const [chainProperties, systemChain, systemChainType, systemName, systemVersion] = await Promise.all([
+    api.rpc.system.properties(),
+    api.rpc.system.chain(),
+    api.rpc.system.chainType
+      ? api.rpc.system.chainType()
+      : Promise.resolve(registry.createType('ChainType', 'Live')),
+    api.rpc.system.name(),
+    api.rpc.system.version(),
+  ]);
+
+  return {
+    properties: registry.createType('ChainProperties', {
+      ss58Format: api.consts.system?.ss58Prefix || chainProperties.ss58Format,
+      tokenDecimals: chainProperties.tokenDecimals,
+      tokenSymbol: chainProperties.tokenSymbol
+    }),
+    systemChain: (systemChain || '<unknown>').toString(),
+    systemChainType,
+    systemName: systemName.toString(),
+    systemVersion: systemVersion.toString()
+  };
+}
+
+export const DEFAULT_DECIMALS = registry.createType('u32', 12);
+export const DEFAULT_SS58 = registry.createType('u32', addressDefaults.prefix);
+export const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
 
 async function main() {
   const argv = yargsParser(process.argv.slice(2));
@@ -131,8 +160,17 @@ async function main() {
     throwOnConnect: true,
   });
 
-  api.on("ready", (): void => {
-    
+  const { injectedAccounts, properties, systemChain, systemChainType, systemName, systemVersion } = await retrieve(api);
+  console.log(`chain: ${systemChain} (${systemChainType.toString()}), ${JSON.stringify(properties)}`);
+
+  const ss58Format = properties.ss58Format.unwrapOr(DEFAULT_SS58).toNumber();
+  const tokenSymbol = properties.tokenSymbol.unwrapOr([formatBalance.getDefaults().unit, ...DEFAULT_AUX]);
+  const tokenDecimals = properties.tokenDecimals.unwrapOr([DEFAULT_DECIMALS]);
+
+  registry.setChainProperties(registry.createType('ChainProperties', { ss58Format, tokenDecimals, tokenSymbol }));
+  formatBalance.setDefaults({
+    decimals: (tokenDecimals as BN[]).map((b) => b.toNumber()),
+    unit: tokenSymbol[0].toString()
   });
 
   rl.prompt();

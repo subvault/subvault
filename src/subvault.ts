@@ -86,9 +86,7 @@ const processCommand = async (db, api, argv) => {
         for (const address of getAllAddresses(db)) {
           const account = await api.query.system.account(address);
           const total = account.data.free
-            .add(account.data.reserved)
-            .add(account.data.miscFrozen)
-            .add(account.data.feeFrozen);
+            .add(account.data.reserved);
           const totalHuman = total.div(new BN(1_000_000_000_0)).toNumber();
           console.log(`${address}: ${totalHuman}`);
         }

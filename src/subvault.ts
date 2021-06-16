@@ -15,34 +15,86 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const processCommand = async (db, api, argv) => {
-  if (argv["_"][0] === "import") {
-    if (argv["_"][1] === "external") {
-      if (argv["_"].length == 3) {
-        const address = argv["_"][2];
-        importExternal(db, address);
-        console.log(`Imported address ${address}`);
+const handleArgv = (argv, handlers): any => {
+  for (const handler of handlers) {
+    let matched = true;
+    let matchArgIndex = 0;
+    const matchedValue = {};
 
-        return
+    handler.command.forEach((commandItem) => {
+      if (!matched) {
+        return;
       }
-    }
-  }
 
-  if (argv["_"][0] == "balance") {
-    for (const address of getAllAddresses(db)) {
-      const account = await api.query.system.account(address);
-      const total = account.data.free
-        .add(account.data.reserved)
-        .add(account.data.miscFrozen)
-        .add(account.data.feeFrozen);
-      const totalHuman = total.div(new BN(1_000_000_000_0)).toNumber();
-      console.log(`${address}: ${totalHuman}`);
+      if (commandItem.startsWith("<") && commandItem.endsWith(">")) {
+        if (matchArgIndex >= argv["_"].length) {
+          matched = false;
+          return;
+        }
+
+        const commandName = commandItem.substring(1, commandItem.length - 1);
+        matchedValue[commandName] = argv["_"][matchArgIndex];
+        matchArgIndex += 1;
+      } else if (commandItem.startsWith("[") && commandItem.endsWith("]")) {
+        if (matchArgIndex >= argv["_"].length) {
+          return;
+        }
+
+        const commandName = commandItem.substring(1, commandItem.length - 1);
+        matchedValue[commandName] = argv["_"][matchArgIndex];
+        matchArgIndex += 1;
+      } else {
+        if (matchArgIndex >= argv["_"].length) {
+          matched = false;
+          return;
+        }
+
+        if (commandItem !== argv["_"][matchArgIndex]) {
+          matched = false;
+          return;
+        }
+
+        matchArgIndex += 1;
+      }
+    });
+
+    if (matchArgIndex !== argv["_"].length) {
+      matched = false;
     }
 
-    return
+    if (matched) {
+      return handler.handle(matchedValue);
+    }
   }
 
   console.log("Invalid command");
+};
+
+const processCommand = async (db, api, argv) => {
+  await handleArgv(argv, [
+    { 
+      command: ["import", "external", "<address>"],
+      handle: async (matched) => {
+        const address = matched.address;
+        importExternal(db, address);
+        console.log(`Imported address ${address}`);
+      }
+    },
+    {
+      command: ["balance", "[address]"],
+      handle: async (matched) => {
+        for (const address of getAllAddresses(db)) {
+          const account = await api.query.system.account(address);
+          const total = account.data.free
+            .add(account.data.reserved)
+            .add(account.data.miscFrozen)
+            .add(account.data.feeFrozen);
+          const totalHuman = total.div(new BN(1_000_000_000_0)).toNumber();
+          console.log(`${address}: ${totalHuman}`);
+        }
+      }
+    }
+  ]);
 };
 
 const main = async () => {
@@ -64,9 +116,13 @@ const main = async () => {
   });
 
   rl.prompt();
-  rl.on('line', (input) => {
+  rl.on('line', async (input) => {
     const argv = yargsParser(input);
-    processCommand(db, api, argv);
+    try {
+      await processCommand(db, api, argv);
+    } catch (err) {
+      console.log(err.message);
+    }
 
     rl.prompt();
   });

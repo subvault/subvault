@@ -12,11 +12,9 @@ import { createVault, openVault } from "./startup";
 import { getNetworkId, getNetworkName } from "./metadata";
 import { importExternal, getAllAddresses } from "./wallet";
 import registry from "./registry";
+import serverline from "./serverline";
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-});
+serverline.init({});
 
 function handleArgv(argv, handlers): any {
   for (const handler of handlers) {
@@ -173,16 +171,13 @@ async function main() {
     unit: tokenSymbol[0].toString()
   });
 
-  rl.prompt();
-  rl.on('line', async (input) => {
+  serverline.on('line', async (input) => {
     const argv = yargsParser(input);
     try {
       await processCommand(db, api, argv);
     } catch (err) {
       console.log(err.message);
     }
-
-    rl.prompt();
   });
 };
 main();

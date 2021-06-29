@@ -74,12 +74,12 @@ function Serverline() {
     resume: function() {
       rl.resume();
     },
-    on: function(eventName, ...args) {
+    on: function(eventName: string, ...args) {
       switch (eventName) {
       case "line":
       case "SIGINT":
       case "completer":
-        return myEmitter.on(eventName, ...args);
+        return myEmitter.emit(eventName, ...args);
       }
 
       rl.on(eventName, ...args);

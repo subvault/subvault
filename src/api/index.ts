@@ -3,6 +3,7 @@ import { formatBalance } from "@polkadot/util";
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import { TypeRegistry } from "@polkadot/types/create";
 import BN from "bn.js";
+import config from "./config";
 
 async function retrieve(api: ApiPromise): Promise<any> {
   const registry = new TypeRegistry();
@@ -21,42 +22,59 @@ async function retrieve(api: ApiPromise): Promise<any> {
     api.rpc.system.version(),
   ]);
 
-  const ss58Format = ((api.consts.system?.ss58Prefix || chainProperties.ss58Format) as any)
-    .unwrapOr(DEFAULT_SS58).toNumber();
-  const tokenSymbol = chainProperties.tokenSymbol.unwrapOr([formatBalance.getDefaults().unit, ...DEFAULT_AUX]);
-  const tokenDecimals = chainProperties.tokenDecimals.unwrapOr([DEFAULT_DECIMALS]);
+  const properties = registry.createType("ChainProperties", {
+    ss58Format: api.consts.system?.ss58Prefix || chainProperties.ss58Format,
+    tokenDecimals: chainProperties.tokenDecimals,
+    tokenSymbol: chainProperties.tokenSymbol
+  });
+
+  const ss58Format = properties.ss58Format.unwrapOr(DEFAULT_SS58).toNumber();
+  const tokenSymbol = properties.tokenSymbol.unwrapOr([formatBalance.getDefaults().unit, ...DEFAULT_AUX]);
+  const tokenDecimals = properties.tokenDecimals.unwrapOr([DEFAULT_DECIMALS]);
 
   return {
-    properties: registry.createType('ChainProperties', {
-      ss58Format: ss58Format,
-      tokenDecimals: tokenDecimals,
-      tokenSymbol: tokenSymbol
-    }),
+    properties: properties,
     systemChain: (systemChain || '<unknown>').toString(),
     systemChainType,
     systemName: systemName.toString(),
     systemVersion: systemVersion.toString(),
     registry: registry,
+    ss58Format: ss58Format,
+    tokenSymbol: tokenSymbol,
+    tokenDecimals: tokenDecimals
   };
 }
 
 export async function create(networkName: string): Promise<ApiPromise> {
-  console.log(`Using network: ${networkName}`);
+  const endpoint = config[networkName]?.endpoints[0];
 
-  const wsProvider = new WsProvider("wss://rpc.polkadot.io");
+  if (!endpoint) {
+    throw new Error("Unknown network");
+  }
+
+  console.log(`Using network: ${networkName} (${endpoint})`);
+
+  const wsProvider = new WsProvider(endpoint);
 
   const api = await ApiPromise.create({
     provider: wsProvider,
     throwOnConnect: true,
   });
 
-  const { injectedAccounts, properties, systemChain, systemChainType, systemName, systemVersion, registry } = await retrieve(api);
+  const { 
+    injectedAccounts, 
+    properties, 
+    systemChain, 
+    systemChainType, 
+    systemName, 
+    systemVersion, 
+    registry,
+    ss58Format,
+    tokenDecimals,
+    tokenSymbol
+  } = await retrieve(api);
   console.log(`chain: ${systemChain} (${systemChainType.toString()}), ${JSON.stringify(properties)}`);
-
-  const ss58Format = properties.ss58Format;
-  const tokenDecimals = properties.tokenDecimals;
-  const tokenSymbol = properties.tokenSymbol;
-
+  
   registry.setChainProperties(registry.createType('ChainProperties', { ss58Format, tokenDecimals, tokenSymbol }));
   formatBalance.setDefaults({
     decimals: (tokenDecimals as BN[]).map((b) => b.toNumber()),

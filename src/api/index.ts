@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2021 Wei Tang
 
-import { ApiPromise, WsProvider } from "@polkadot/api";
+import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import { TypeRegistry } from "@polkadot/types/create";
@@ -48,7 +48,12 @@ async function retrieve(api: ApiPromise): Promise<any> {
   };
 }
 
-export async function create(networkName: string): Promise<ApiPromise> {
+export type Api = {
+  network: ApiPromise,
+  keyring: Keyring,
+}
+
+export async function create(networkName: string): Promise<Api> {
   const endpoint = config[networkName]?.endpoints[0];
 
   if (!endpoint) {
@@ -85,5 +90,10 @@ export async function create(networkName: string): Promise<ApiPromise> {
     unit: tokenSymbol[0].toString()
   });
 
-  return api;
+  const keyring = new Keyring();
+
+  return {
+    network: api,
+    keyring: keyring,
+  }
 }

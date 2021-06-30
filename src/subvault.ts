@@ -6,11 +6,12 @@ import readline from "readline";
 import yargsParser from "yargs-parser";
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
+import Keyring from "@polkadot/keyring";
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import BN from "bn.js";
-import { DB } from "./db";
+import { Db } from "./db";
 import serverline from "./serverline";
-import { create as createAPI } from "./api";
+import { create as createAPI, Api } from "./api";
 
 serverline.init({});
 
@@ -73,7 +74,7 @@ function handleArgv(argv, handlers): any {
   console.log("Invalid command");
 };
 
-async function processCommand(db, api, argv) {
+async function processCommand(db, api: Api, argv) {
   await handleArgv(argv, [
     { 
       command: "wallet add external <name> <address>",
@@ -81,8 +82,22 @@ async function processCommand(db, api, argv) {
         const address = matched.address;
         const name = matched.name;
         const data = { address: matched.address };
+
         db.insertWallet(name, "external", data);
-        console.log(`Imported address ${address}`);
+        console.log(`Imported external wallet ${address}`);
+      }
+    },
+    {
+      command: "wallet add polkadotjs <json> <passphrase>",
+      handle: async (matched) => {
+        const data = JSON.parse(matched.json);
+        const pair = api.keyring.createFromJson(data);
+        pair.unlock(matched.passphrase);
+        const name = pair.meta.name;
+        const address = pair.address.toString();
+
+        db.insertWallet(name, "polkadotjs", data);
+        console.log(`Imported polkadotjs wallet ${address}`);
       }
     },
     {
@@ -99,11 +114,11 @@ async function processCommand(db, api, argv) {
           const wallet = db.wallets[matched.address];
 
           if (wallet) {
-            const account = await api.derive.balances.all(wallet.address);
+            const account = await api.network.derive.balances.all(wallet.address);
             const balanceTotal = account.freeBalance.add(account.reservedBalance);
             console.log(`${wallet.name} (${wallet.address}): ${formatBalance(balanceTotal)}`);
           } else {
-            const account = await api.derive.balances.all(matched.address);
+            const account = await api.network.derive.balances.all(matched.address);
             const balanceTotal = account.freeBalance.add(account.reservedBalance);
             console.log(`${matched.address}: ${formatBalance(balanceTotal)}`);
           }
@@ -112,7 +127,7 @@ async function processCommand(db, api, argv) {
 
           for (const walletName of Object.keys(wallets)) {
             const wallet = wallets[walletName];
-            const account = await api.derive.balances.all(wallet.address);
+            const account = await api.network.derive.balances.all(wallet.address);
             const balanceTotal = account.freeBalance.add(account.reservedBalance);
             console.log(`${wallet.name} (${wallet.address}): ${formatBalance(balanceTotal)}`);
           }
@@ -132,11 +147,11 @@ async function processCommand(db, api, argv) {
 async function main() {
   const argv = yargsParser(process.argv.slice(2));
 
-  let db: DB;
+  let db: Db;
   if (argv.create) {
-    db = DB.create(argv["_"][0], { networkId: argv.networkId, networkName: argv.networkName });
+    db = Db.create(argv["_"][0], { networkId: argv.networkId, networkName: argv.networkName });
   } else {
-    db = DB.open(argv["_"][0]);
+    db = Db.open(argv["_"][0]);
   }
 
   const api = await createAPI(db.networkName);

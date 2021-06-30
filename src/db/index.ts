@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2021 Wei Tang
 
-import SqliteDB, * as sqlite3 from "better-sqlite3";
+import SqliteDb, * as sqlite3 from "better-sqlite3";
 import assert from "assert";
 import { migrate } from "./migration";
 import { LATEST_VERSION, APPLICATION_ID } from "./const";
@@ -13,7 +13,7 @@ type CreateVaultOptions = {
   networkName: string,
 };
 
-export class DB {
+export class Db {
   private readonly raw: sqlite3.Database;
   private constructor(raw: sqlite3.Database) {
     this.raw = raw;
@@ -77,6 +77,8 @@ export class DB {
     let address: string;
     if (type === "external") {
       address = data.address;
+    } else if (type === "polkadotjs") {
+      address = data.address;
     } else {
       throw new Error("Unsupported wallet type");
     }
@@ -91,9 +93,9 @@ export class DB {
     this.raw.prepare("DELETE FROM wallets WHERE name = ?").run(name);
   }
  
-  static create(path: string, options: CreateVaultOptions): DB {
-    const raw = new SqliteDB(path);
-    const db = new DB(raw);
+  static create(path: string, options: CreateVaultOptions): Db {
+    const raw = new SqliteDb(path);
+    const db = new Db(raw);
 
     db.raw.pragma(`application_id = ${APPLICATION_ID}`);
     db.migrate();
@@ -109,9 +111,9 @@ export class DB {
     return db;
   }
 
-  static open(path: string): DB {
-    const raw = new SqliteDB(path);
-    const db = new DB(raw);
+  static open(path: string): Db {
+    const raw = new SqliteDb(path);
+    const db = new Db(raw);
 
     db.migrate();
     db.check();

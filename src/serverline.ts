@@ -74,15 +74,15 @@ function Serverline() {
     resume: function() {
       rl.resume();
     },
-    on: function(eventName: string, ...args) {
+    on: function(eventName: string, listener: (...args: any[]) => void) {
       switch (eventName) {
       case "line":
       case "SIGINT":
       case "completer":
-        return myEmitter.emit(eventName, ...args);
+        return myEmitter.on(eventName, listener);
       }
 
-      rl.on(eventName, ...args);
+      rl.on(eventName, listener);
     },
     _debugModuleSupport: function(debug, ...args) {
       debug.log = function log() {

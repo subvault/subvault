@@ -79,6 +79,7 @@ async function processCommand(db, api, argv) {
       command: "import external <name> <address>",
       handle: async (matched) => {
         const address = matched.address;
+        const name = matched.name;
         db.importExternal(name, address);
         console.log(`Imported address ${address}`);
       }

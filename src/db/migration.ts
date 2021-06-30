@@ -3,7 +3,6 @@
 
 import Database, * as sqlite3 from "better-sqlite3";
 import { getCurrentVersion } from "./util";
-import { LATEST_VERSION } from "./const";
 
 type Migration = {
   fromVersion: number,
@@ -11,10 +10,14 @@ type Migration = {
   scripts: string[],
 };
 
+export const LATEST_VERSION: number = 1;
+
 const MIGRATIONS: Migration[] = [
   { fromVersion: 0, toVersion: 1, scripts: [
-      "CREATE TABLE wallets (name TEXT, address TEXT NOT NULL UNIQUE, type TEXT NOT NULL, json TEXT NOT NULL)",
-      "CREATE TABLE metadata (name TEXT PRIMARY KEY NOT NULL, json TEXT NOT NULL)"
+    "CREATE TABLE accounts (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE, address TEXT NOT NULL UNIQUE, type TEXT NOT NULL, json TEXT NOT NULL)",
+    "CREATE TABLE metadata (name TEXT PRIMARY KEY NOT NULL, json TEXT NOT NULL)",
+    "CREATE TABLE tags (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)",
+    "CREATE TABLE account_tags (account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE, tag_id INTEGER REFERENCES tags(id), PRIMARY KEY(account_id, tag_id))"
   ] },
 ];
 

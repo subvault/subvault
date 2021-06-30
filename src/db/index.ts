@@ -3,8 +3,8 @@
 
 import SqliteDb, * as sqlite3 from "better-sqlite3";
 import assert from "assert";
-import { migrate } from "./migration";
-import { LATEST_VERSION, APPLICATION_ID } from "./const";
+import { migrate, LATEST_VERSION } from "./migration";
+import { APPLICATION_ID } from "./const";
 import { getCurrentVersion, getCurrentApplicationId, getMetadataByName } from "./util";
 import { decodeAddress } from "../util";
 
@@ -49,7 +49,7 @@ export class Db {
   get addresses(): string[] {
     const addresses = [];
 
-    const walletAddresses = this.raw.prepare("SELECT address from wallets").all();
+    const walletAddresses = this.raw.prepare("SELECT address from accounts").all();
     for (const address of walletAddresses) {
       addresses.push(address.address);
     }
@@ -57,10 +57,10 @@ export class Db {
     return addresses;
   }
 
-  get wallets(): any {
+  get accounts(): any {
     const wallets = {};
 
-    const extWallets = this.raw.prepare("SELECT name, address, type, json from wallets").all();
+    const extWallets = this.raw.prepare("SELECT name, address, type, json FROM accounts").all();
     for (const wallet of extWallets) {
       wallets[wallet.name] = {
         type: wallet.type,
@@ -73,24 +73,50 @@ export class Db {
     return wallets;
   }
 
-  insertWallet(name: string, type: string, data: any) {
+  insertAccount(name: string, type: string, data: any) {
     let address: string;
     if (type === "external") {
       address = data.address;
     } else if (type === "polkadotjs") {
       address = data.address;
     } else {
-      throw new Error("Unsupported wallet type");
+      throw new Error("unsupported wallet type");
     }
 
     decodeAddress(address, this.networkId);
 
-    this.raw.prepare("INSERT INTO wallets (name, address, type, json) VALUES (?, ?, ?, ?)")
+    this.raw.prepare("INSERT INTO accounts (name, address, type, json) VALUES (?, ?, ?, ?)")
       .run(name, address, type, JSON.stringify(data));
   }
 
-  deleteWallet(name: string) {
-    this.raw.prepare("DELETE FROM wallets WHERE name = ?").run(name);
+  deleteAccount(name: string) {
+    this.raw.prepare("DELETE FROM accounts WHERE name = ?").run(name);
+  }
+
+  addTag(walletName: string, tagName: string) {
+    const walletId = this.raw.prepare("SELECT id FROM accounts WHERE name = ?").get(walletName).id;
+    if (!walletId) {
+      throw new Error("wallet does not exist");
+    }
+    this.raw.prepare("INSERT OR IGNORE INTO tags (name) VALUES (?)").run(tagName);
+    const tagId = this.raw.prepare("SELECT id FROM tags WHERE name = ?").get(tagName).id;
+
+    this.raw.prepare("INSERT OR IGNORE INTO account_tags (account_id, tag_id) VALUES (?, ?)")
+      .run(walletId, tagId);
+  }
+
+  removeTag(walletName: string, tagName: string) {
+    const walletId = this.raw.prepare("SELECT id FROM accounts WHERE name = ?").get(walletName).id;
+    if (!walletId) {
+      return
+    }
+
+    const tagId = this.raw.prepare("SELECT id FROM tags WHERE name = ?").get(tagName).id;
+    if (!tagId) {
+      return
+    }
+
+    this.raw.prepare("DELETE FROM account_tags WHERE account_id = ? AND tag_id = ?").run(walletId, tagId);
   }
  
   static create(path: string, options: CreateVaultOptions): Db {

@@ -3,6 +3,7 @@
 
 export default {
   polkadot: {
+    networkId: 0,
     endpoints: [
       "wss://rpc.polkadot.io",
       "wss://polkadot.api.onfinality.io/public-ws",
@@ -19,6 +20,7 @@ export default {
     ]
   },
   neatcoin: {
+    networkId: 48,
     endpoints: [
       "wss://rpc.neatcoin.org/ws"
     ],

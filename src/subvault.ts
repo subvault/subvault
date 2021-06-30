@@ -11,6 +11,7 @@ import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defau
 import BN from "bn.js";
 import { Db } from "./db";
 import serverline from "./serverline";
+import config from "./api/config";
 import { create as createAPI, Api } from "./api";
 
 serverline.init({});
@@ -74,7 +75,7 @@ function handleArgv(argv, handlers): any {
   console.log("Invalid command");
 };
 
-async function processCommand(db, api: Api, argv) {
+async function processCommand(db: Db, api: Api, argv) {
   await handleArgv(argv, [
     { 
       command: "wallet add external <name> <address>",
@@ -83,7 +84,8 @@ async function processCommand(db, api: Api, argv) {
         const name = matched.name;
         const data = { address: matched.address };
 
-        db.insertWallet(name, "external", data);
+        db.insertAccount(name, "external", data);
+        db.addTag(name, "owned");
         console.log(`Imported external wallet ${address}`);
       }
     },
@@ -94,19 +96,38 @@ async function processCommand(db, api: Api, argv) {
         const pair = api.keyring.createFromJson(data);
         const passphrase = await serverline.secret("Enter passphrase: ");
         pair.unlock(passphrase);
-        const name = pair.meta.name;
+        const name = pair.meta.name as string;
         const address = pair.address.toString();
 
-        db.insertWallet(name, "polkadotjs", data);
+        db.insertAccount(name, "polkadotjs", data);
+        db.addTag(name, "owned");
         console.log(`Imported polkadotjs wallet ${address}`);
       }
     },
     {
       command: "wallet remove <name>",
       handle: async (matched) => {
-        db.deleteWallet(matched.name);
+        db.deleteAccount(matched.name);
         console.log(`Deleted wallet ${matched.name}`);
       }
+    },
+    {
+      command: "addressbook add <name> <address>",
+      handle: async (matched) => {
+        const address = matched.address;
+        const name = matched.name;
+        const data = { address: matched.address };
+
+        db.insertAccount(name, "external", data);
+        console.log(`Added addressbook ${address}`);
+      }
+    },
+    {
+      command: "addressbook remove <name>",
+      handle: async (matched) => {
+        db.deleteAccount(matched.name);
+        console.log(`Deleted addressbook ${matched.name}`);
+      },
     },
     {
       command: "balance [address]",
@@ -150,10 +171,18 @@ async function main() {
   const argv = yargsParser(process.argv.slice(2));
 
   let db: Db;
-  if (argv.create) {
-    db = Db.create(argv["_"][0], { networkId: argv.networkId, networkName: argv.networkName });
-  } else {
-    db = Db.open(argv["_"][0]);
+  if (argv["_"][0] === "create") {
+    console.log("Creating a new vault.")
+    const networkName = await serverline.question("Enter the network name: ");
+    const networkId = config[networkName]?.networkId;
+
+    if (!networkId) {
+      throw new Error("Unknown network");
+    }
+
+    db = Db.create(argv["_"][1], { networkId: networkId, networkName: networkName });
+  } else if (argv["_"][0] === "open") {
+    db = Db.open(argv["_"][1]);
   }
 
   const api = await createAPI(db.networkName);

@@ -14,7 +14,6 @@ import serverline from "./serverline";
 import { create as createAPI, Api } from "./api";
 
 serverline.init({});
-serverline.setMuted(true, "> Processing ");
 
 function handleArgv(argv, handlers): any {
   for (const handler of handlers) {
@@ -89,11 +88,12 @@ async function processCommand(db, api: Api, argv) {
       }
     },
     {
-      command: "wallet add polkadotjs <json> <passphrase>",
+      command: "wallet add polkadotjs <json>",
       handle: async (matched) => {
         const data = JSON.parse(matched.json);
         const pair = api.keyring.createFromJson(data);
-        pair.unlock(matched.passphrase);
+        const passphrase = await serverline.secret("Enter passphrase: ");
+        pair.unlock(passphrase);
         const name = pair.meta.name;
         const address = pair.address.toString();
 
@@ -139,6 +139,7 @@ async function processCommand(db, api: Api, argv) {
     {
       command: "exit",
       handle: async (matched) => {
+        console.log();
         process.exit(0);
       }
     },
@@ -157,16 +158,14 @@ async function main() {
 
   const api = await createAPI(db.networkName);
 
-  serverline.setMuted(false, null);
-  serverline.on('line', async (input) => {
-    serverline.setMuted(true, "> Processing ");
+  while(true) {
+    const input = await serverline.prompt();
     const argv = yargsParser(input);
     try {
       await processCommand(db, api, argv);
     } catch (err) {
       console.log(err.message);
     }
-    serverline.setMuted(false, null);
-  });
+  }
 };
 main();

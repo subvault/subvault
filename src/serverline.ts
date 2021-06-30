@@ -13,6 +13,7 @@ let rl = null;
 let stdoutMuted = false;
 let myPrompt = "> ";
 let completions = [];
+let promptResolves = [];
 
 const collection = {
   stdout: new stream.Writable(),
@@ -23,9 +24,8 @@ function Serverline() {
   return {
     init: init,
     secret: secret,
-    question: function(...args) {
-      rl.question.apply(...args);
-    },
+    prompt: prompt,
+    question: question,
     getPrompt: function() {
       return myPrompt;
     },
@@ -36,13 +36,7 @@ function Serverline() {
     isMuted: function() {
       return stdoutMuted;
     },
-    setMuted: function(enabled, msg) {
-      stdoutMuted = !!enabled;
-
-      const message = (msg && typeof msg === "string") ? msg : "> [hidden]";
-      rl.setPrompt((!stdoutMuted) ? myPrompt : message);
-      return stdoutMuted;
-    },
+    setMuted: setMuted,
     setCompletion: function(obj) {
       completions = (typeof obj === "object") ? obj : completions;
     },
@@ -150,6 +144,10 @@ function init(options) {
       rl.history.push(line);
     }
     myEmitter.emit("line", line);
+    for (const resolve of promptResolves) {
+      resolve(line);
+    }
+    promptResolves = [];
     if (rl.terminal) {
       rl.prompt();
     }
@@ -160,11 +158,11 @@ function init(options) {
       rl.line = "";
     }
     if (!myEmitter.emit("SIGINT", rl)) {
+      console.log();
       process.exit(0);
     }
   });
   rl.prompt();
-
 
   rl.input.on("data", function(char) { // fix CTRL+C on question
     if (char === "\u0003" && fixSIGINTonQuestion) {
@@ -173,22 +171,60 @@ function init(options) {
     }
     fixSIGINTonQuestion = false;
   });
+
+  setMuted(true, null);
 }
 
-function secret(query, callback) {
+function setMuted(enabled, msg) {
+  stdoutMuted = !!enabled;
+
+  const message = (msg && typeof msg === "string") ? msg : "";
+  rl.setPrompt((!stdoutMuted) ? myPrompt : message);
+  return stdoutMuted;
+}
+
+function secret(query): Promise<string> {
   const toggleAfterAnswer = !stdoutMuted;
   stdoutMuted = true;
-  rl.question(query, function(value) {
-    if (rl.terminal) {
-      rl.history = rl.history.slice(1);
-    }
-
-    if (toggleAfterAnswer) {
-      stdoutMuted = false;
-    }
-
-    callback(value);
+  const promise = new Promise((resolve, reject) => {
+    rl.question(query, (value) => {
+      if (rl.terminal) {
+        rl.history = rl.history.slice(1);
+      }
+  
+      if (toggleAfterAnswer) {
+        stdoutMuted = false;
+      }
+  
+      resolve(value);
+    });
   });
+
+  return promise as Promise<string>;
+}
+
+function prompt(): Promise<string> {
+  let promise = new Promise((resolve, reject) => {
+    setMuted(false, null);
+    promptResolves.push((input) => {
+      setMuted(true, null);
+      resolve(input);
+    });
+  });
+
+  return promise as Promise<string>;
+}
+
+function question(query): Promise<string> {
+  const promise = new Promise((resolve, reject) => {
+    setMuted(false, null);
+    rl.question(query, (value) => {
+      setMuted(true, null);
+      resolve(value);
+    });
+  });
+
+  return promise as Promise<string>;
 }
 
 function hiddenOverwrite() {

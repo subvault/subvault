@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2021 Wei Tang
+
 import SqliteDB, * as sqlite3 from "better-sqlite3";
 import assert from "assert";
 import { migrate } from "./migration";

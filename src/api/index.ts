@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (c) 2021 Wei Tang
+
 import { ApiPromise, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';

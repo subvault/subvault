@@ -133,7 +133,7 @@ async function processCommand(db: Db, api: Api, argv) {
       command: "balance [address]",
       handle: async (matched) => {
         if (matched.address) {
-          const wallet = db.wallets[matched.address];
+          const wallet = db.accounts[matched.address];
 
           if (wallet) {
             const account = await api.network.derive.balances.all(wallet.address);
@@ -145,7 +145,7 @@ async function processCommand(db: Db, api: Api, argv) {
             console.log(`${matched.address}: ${formatBalance(balanceTotal)}`);
           }
         } else {
-          const wallets = db.wallets;
+          const wallets = db.accountsByTag("owned");
 
           for (const walletName of Object.keys(wallets)) {
             const wallet = wallets[walletName];

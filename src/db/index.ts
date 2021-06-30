@@ -73,6 +73,27 @@ export class Db {
     return wallets;
   }
 
+  accountsByTag(tagName: string): any {
+    const tagId = this.raw.prepare("SELECT id FROM tags where name = ?").get(tagName).id;
+    if (!tagId) {
+      return {};
+    }
+
+    const wallets = {};
+    const accounts = this.raw.prepare("SELECT name, address, type, json FROM accounts INNER JOIN account_tags ON account_tags.account_id = accounts.id AND account_tags.tag_id = ?")
+      .all(tagId);
+    for (const wallet of accounts) {
+      wallets[wallet.name] = {
+        type: wallet.type,
+        name: wallet.name,
+        address: wallet.address,
+        data: JSON.parse(wallet.json),
+      };
+    }
+    
+    return wallets;
+  }
+
   insertAccount(name: string, type: string, data: any) {
     let address: string;
     if (type === "external") {

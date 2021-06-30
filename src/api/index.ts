@@ -59,6 +59,7 @@ export async function create(networkName: string): Promise<ApiPromise> {
   const api = await ApiPromise.create({
     provider: wsProvider,
     throwOnConnect: true,
+    types: config[networkName].types,
   });
 
   const { 
@@ -74,7 +75,7 @@ export async function create(networkName: string): Promise<ApiPromise> {
     tokenSymbol
   } = await retrieve(api);
   console.log(`chain: ${systemChain} (${systemChainType.toString()}), ${JSON.stringify(properties)}`);
-  
+
   registry.setChainProperties(registry.createType('ChainProperties', { ss58Format, tokenDecimals, tokenSymbol }));
   formatBalance.setDefaults({
     decimals: (tokenDecimals as BN[]).map((b) => b.toNumber()),

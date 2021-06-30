@@ -18,7 +18,10 @@ export default {
   neatcoin: {
     endpoints: [
       "wss://rpc.neatcoin.org/ws"
-    ]
+    ],
+    types: {
+      NameHash: "H256"
+    }
   },
   kulupu: {
     endpoints: [

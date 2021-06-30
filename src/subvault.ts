@@ -8,9 +8,7 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import BN from "bn.js";
-import { createVault, openVault } from "./startup";
-import { getNetworkId, getNetworkName } from "./metadata";
-import { importExternal, getAllAddresses } from "./wallet";
+import { DB } from "./db";
 import serverline from "./serverline";
 import { create as createAPI } from "./api";
 
@@ -78,10 +76,10 @@ function handleArgv(argv, handlers): any {
 async function processCommand(db, api, argv) {
   await handleArgv(argv, [
     { 
-      command: "import external <address>",
+      command: "import external <name> <address>",
       handle: async (matched) => {
         const address = matched.address;
-        importExternal(db, address);
+        db.importExternal(name, address);
         console.log(`Imported address ${address}`);
       }
     },
@@ -92,7 +90,7 @@ async function processCommand(db, api, argv) {
         if (matched.address) {
           addresses = [ matched.address ];
         } else {
-          addresses = getAllAddresses(db);
+          addresses = db.allAddresses;
         }
 
         for (const address of addresses) {
@@ -102,6 +100,7 @@ async function processCommand(db, api, argv) {
         }
       }
     },
+
     {
       command: "exit",
       handle: async (matched) => {
@@ -114,14 +113,14 @@ async function processCommand(db, api, argv) {
 async function main() {
   const argv = yargsParser(process.argv.slice(2));
 
-  let db: sqlite3.Database;
+  let db: DB;
   if (argv.create) {
-    db = createVault(argv["_"][0], { networkId: argv.networkId, networkName: argv.networkName });
+    db = DB.create(argv["_"][0], { networkId: argv.networkId, networkName: argv.networkName });
   } else {
-    db = openVault(argv["_"][0]);
+    db = DB.open(argv["_"][0]);
   }
 
-  const api = await createAPI(getNetworkName(db));
+  const api = await createAPI(db.networkName);
 
   serverline.on('line', async (input) => {
     const argv = yargsParser(input);

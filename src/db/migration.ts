@@ -2,6 +2,7 @@
 // Copyright (c) 2021 Wei Tang
 
 import Database, * as sqlite3 from "better-sqlite3";
+import { getCurrentVersion } from "./util";
 import { LATEST_VERSION } from "./const";
 
 type Migration = {
@@ -23,13 +24,9 @@ for (const migration of MIGRATIONS) {
   INDEXED_MIGRATIONS[migration.fromVersion] = migration;
 }
 
-export function currentVersion(db: sqlite3.Database) {
-  return db.pragma("user_version")[0].user_version;
-};
-
 export function migrate(db: sqlite3.Database) {
-  while (currentVersion(db) != LATEST_VERSION) {
-    const migration = INDEXED_MIGRATIONS[currentVersion(db)];
+  while (getCurrentVersion(db) != LATEST_VERSION) {
+    const migration = INDEXED_MIGRATIONS[getCurrentVersion(db)];
     db.transaction(() => {
       for (const script of migration.scripts) {
         db.prepare(script).run();

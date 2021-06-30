@@ -87,17 +87,27 @@ async function processCommand(db, api, argv) {
     {
       command: "balance [address]",
       handle: async (matched) => {
-        let addresses;
         if (matched.address) {
-          addresses = [ matched.address ];
-        } else {
-          addresses = db.allAddresses;
-        }
+          const wallet = db.wallets[matched.address];
 
-        for (const address of addresses) {
-          const account = await api.derive.balances.all(address);
-          const balanceTotal = account.freeBalance.add(account.reservedBalance);
-          console.log(`${address}: ${formatBalance(balanceTotal)}`);
+          if (wallet) {
+            const account = await api.derive.balances.all(wallet.address);
+            const balanceTotal = account.freeBalance.add(account.reservedBalance);
+            console.log(`${wallet.name} (${wallet.address}): ${formatBalance(balanceTotal)}`);
+          } else {
+            const account = await api.derive.balances.all(matched.address);
+            const balanceTotal = account.freeBalance.add(account.reservedBalance);
+            console.log(`${matched.address}: ${formatBalance(balanceTotal)}`);
+          }
+        } else {
+          const wallets = db.wallets;
+
+          for (const walletName of Object.keys(wallets)) {
+            const wallet = wallets[walletName];
+            const account = await api.derive.balances.all(wallet.address);
+            const balanceTotal = account.freeBalance.add(account.reservedBalance);
+            console.log(`${wallet.name} (${wallet.address}): ${formatBalance(balanceTotal)}`);
+          }
         }
       }
     },

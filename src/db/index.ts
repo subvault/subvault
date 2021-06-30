@@ -62,6 +62,21 @@ export class DB {
     return addresses;
   }
 
+  get wallets(): any {
+    const wallets = {};
+
+    const extWallets = this.raw.prepare("SELECT name, address from ext_wallets").all();
+    for (const wallet of extWallets) {
+      wallets[wallet.name] = {
+        type: "external",
+        name: wallet.name,
+        address: wallet.address,
+      };
+    }
+
+    return wallets;
+  }
+
   importExternal(name: string, address: string) {
     decodeAddress(address, this.networkId);
     this.raw.prepare("INSERT INTO ext_wallets (name, address) VALUES (?, ?)").run(name, address);

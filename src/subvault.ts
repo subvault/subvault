@@ -14,6 +14,7 @@ import serverline from "./serverline";
 import { create as createAPI, Api } from "./api";
 
 serverline.init({});
+serverline.setMuted(true, "> Processing ");
 
 function handleArgv(argv, handlers): any {
   for (const handler of handlers) {
@@ -156,13 +157,16 @@ async function main() {
 
   const api = await createAPI(db.networkName);
 
+  serverline.setMuted(false, null);
   serverline.on('line', async (input) => {
+    serverline.setMuted(true, "> Processing ");
     const argv = yargsParser(input);
     try {
       await processCommand(db, api, argv);
     } catch (err) {
       console.log(err.message);
     }
+    serverline.setMuted(false, null);
   });
 };
 main();

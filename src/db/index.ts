@@ -46,16 +46,11 @@ export class DB {
     return getMetadataByName(this.raw, "network_name");
   }
 
-  get allAddresses(): string[] {
+  get addresses(): string[] {
     const addresses = [];
 
-    const extAddresses = this.raw.prepare("SELECT address from ext_wallets").all();
-    for (const address of extAddresses) {
-      addresses.push(address.address);
-    }
-  
-    const ownAddresses = this.raw.prepare("SELECT address from own_wallets").all();
-    for (const address of ownAddresses) {
+    const walletAddresses = this.raw.prepare("SELECT address from wallets").all();
+    for (const address of walletAddresses) {
       addresses.push(address.address);
     }
   
@@ -65,21 +60,35 @@ export class DB {
   get wallets(): any {
     const wallets = {};
 
-    const extWallets = this.raw.prepare("SELECT name, address from ext_wallets").all();
+    const extWallets = this.raw.prepare("SELECT name, address, type, json from wallets").all();
     for (const wallet of extWallets) {
       wallets[wallet.name] = {
-        type: "external",
+        type: wallet.type,
         name: wallet.name,
         address: wallet.address,
+        data: JSON.parse(wallet.json),
       };
     }
 
     return wallets;
   }
 
-  importExternal(name: string, address: string) {
+  insertWallet(name: string, type: string, data: any) {
+    let address: string;
+    if (type === "external") {
+      address = data.address;
+    } else {
+      throw new Error("Unsupported wallet type");
+    }
+
     decodeAddress(address, this.networkId);
-    this.raw.prepare("INSERT INTO ext_wallets (name, address) VALUES (?, ?)").run(name, address);
+
+    this.raw.prepare("INSERT INTO wallets (name, address, type, json) VALUES (?, ?, ?, ?)")
+      .run(name, address, type, JSON.stringify(data));
+  }
+
+  deleteWallet(name: string) {
+    this.raw.prepare("DELETE FROM wallets WHERE name = ?").run(name);
   }
  
   static create(path: string, options: CreateVaultOptions): DB {

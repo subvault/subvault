@@ -13,8 +13,7 @@ type Migration = {
 
 const MIGRATIONS: Migration[] = [
   { fromVersion: 0, toVersion: 1, scripts: [
-      "CREATE TABLE ext_wallets (name TEXT, address TEXT NOT NULL)",
-      "CREATE TABLE own_wallets (name TEXT, address TEXT NOT NULL, type TEXT NOT NULL, json TEXT NOT NULL)",
+      "CREATE TABLE wallets (name TEXT, address TEXT NOT NULL UNIQUE, type TEXT NOT NULL, json TEXT NOT NULL)",
       "CREATE TABLE metadata (name TEXT PRIMARY KEY NOT NULL, json TEXT NOT NULL)"
   ] },
 ];

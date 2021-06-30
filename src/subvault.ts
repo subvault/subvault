@@ -76,12 +76,20 @@ function handleArgv(argv, handlers): any {
 async function processCommand(db, api, argv) {
   await handleArgv(argv, [
     { 
-      command: "import external <name> <address>",
+      command: "wallet add external <name> <address>",
       handle: async (matched) => {
         const address = matched.address;
         const name = matched.name;
-        db.importExternal(name, address);
+        const data = { address: matched.address };
+        db.insertWallet(name, "external", data);
         console.log(`Imported address ${address}`);
+      }
+    },
+    {
+      command: "wallet remove <name>",
+      handle: async (matched) => {
+        db.deleteWallet(matched.name);
+        console.log(`Deleted wallet ${matched.name}`);
       }
     },
     {

@@ -1,6 +1,6 @@
 {
   "name": "subvault",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Command-line wallet for Substrate-based blockchains.",
   "main": "lib/index.js",
   "repository": "https://github.com/rust-blockchain/subvault",
@@ -12,6 +12,10 @@
       "@babel/preset-env"
     ]
   },
+  "files": [
+    "LICENSE",
+    "lib/**/*"
+  ],
   "scripts": {
     "prepack": "babel src --out-dir lib --extensions \".js,.ts,.tsx\" --source-maps inline"
   },

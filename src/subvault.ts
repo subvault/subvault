@@ -119,6 +119,7 @@ async function processCommand(db: Db, api: Api, argv) {
         const data = { address: matched.address };
 
         db.insertAccount(name, "external", data);
+        db.addTag(name, "addressbook");
         console.log(`Added addressbook ${address}`);
       }
     },

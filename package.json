@@ -1,8 +1,8 @@
 {
   "name": "subvault",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Command-line wallet for Substrate-based blockchains.",
-  "main": "index.cjs",
+  "main": "src/index.cjs",
   "repository": "https://github.com/rust-blockchain/subvault",
   "author": "Wei Tang <wei@that.world>",
   "license": "GPL-3.0",
@@ -13,7 +13,7 @@
     ]
   },
   "bin": {
-    "subvault": "./index.cjs"
+    "subvault": "./src/index.cjs"
   },
   "dependencies": {
     "@babel/core": "^7.14.5",

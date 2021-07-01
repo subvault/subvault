@@ -3,7 +3,7 @@
   "version": "0.2.4",
   "description": "Command-line wallet for Substrate-based blockchains.",
   "main": "lib/index.js",
-  "repository": "https://github.com/rust-blockchain/subvault",
+  "repository": "https://github.com/subvault/subvault",
   "author": "Wei Tang <wei@that.world>",
   "license": "GPL-3.0",
   "babel": {

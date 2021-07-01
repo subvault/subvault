@@ -90,6 +90,8 @@ function formatCall(indentation, call) {
     for (const arg of call.args) {
       formatCall(indentation + 2, arg);
     }
+  } else if (call.toRawType && (call.toRawType() === "Balance" || call.toRawType() === "Compact<Balance>")) {
+    console.log(indentString + formatBalance(call));
   } else if (call.toRawType && call.toRawType().startsWith("Vec")) {
     console.log(indentString + "-");
     call.forEach((element) => {
@@ -265,7 +267,28 @@ async function processCommand(control: Control, argv) {
           const multiCall = api.tx.utility.batch(currentCalls);
           await signCallUsing(control, multiCall, matched.address);
         }
+
+        console.log("Finished payout execution.");
       }
+    },
+    {
+      command: "transfer from <from> to <to> value <value>",
+      handle: async (matched) => {
+        let to;
+
+        const wallet = db.accounts[matched.to];
+        if (wallet) {
+          to = wallet.address;
+        } else {
+          to = matched.to;
+        }
+
+        const value = new BN(matched.value).mul(new BN(10).pow(new BN(api.registry.chainDecimals[0])));
+        const call = api.tx.balances.transferKeepAlive(to, value);
+        await signCallUsing(control, call, matched.from);
+
+        console.log("Finished send");
+      },
     },
 
     {

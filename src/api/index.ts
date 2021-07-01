@@ -48,12 +48,7 @@ async function retrieve(api: ApiPromise): Promise<any> {
   };
 }
 
-export type Api = {
-  network: ApiPromise,
-  keyring: Keyring,
-}
-
-export async function create(networkName: string): Promise<Api> {
+export async function create(networkName: string): Promise<ApiPromise> {
   const endpoint = config[networkName]?.endpoints[0];
 
   if (!endpoint) {
@@ -90,10 +85,5 @@ export async function create(networkName: string): Promise<Api> {
     unit: tokenSymbol[0].toString()
   });
 
-  const keyring = new Keyring();
-
-  return {
-    network: api,
-    keyring: keyring,
-  }
+  return api;
 }

@@ -1,6 +1,6 @@
 {
   "name": "subvault",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "Command-line wallet for Substrate-based blockchains.",
   "main": "lib/index.js",
   "repository": "https://github.com/rust-blockchain/subvault",
@@ -16,7 +16,7 @@
     "prepare": "babel src --out-dir lib --extensions \".js,.ts,.tsx\" --source-maps inline"
   },
   "bin": {
-    "subvault": "./src/index.js"
+    "subvault": "./lib/index.js"
   },
   "dependencies": {
     "@babel/core": "^7.14.5",

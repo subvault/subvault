@@ -13,8 +13,7 @@
     ]
   },
   "scripts": {
-    "build": "babel src --out-dir lib --extensions \".js,.ts,.tsx\" --source-maps inline",
-    "prepare": "npm run build"
+    "prepare": "babel src --out-dir lib --extensions \".js,.ts,.tsx\" --source-maps inline"
   },
   "bin": {
     "subvault": "./src/index.js"

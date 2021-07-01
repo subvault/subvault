@@ -15,6 +15,7 @@ import serverline from "./serverline";
 import config from "./api/config";
 import { create as createAPI } from "./api";
 import { assert } from "console";
+import "regenerator-runtime/runtime";
 
 serverline.init({});
 

@@ -317,7 +317,7 @@ async function main() {
     const networkName = await serverline.question("Enter the network name: ");
     const networkId = config[networkName]?.networkId;
 
-    if (!networkId) {
+    if (networkId === undefined) {
       throw new Error("Unknown network");
     }
 

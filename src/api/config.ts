@@ -12,6 +12,7 @@ export default {
     ]
   },
   kusama: {
+    networkId: 2,
     endpoints: [
       "wss://kusama-rpc.polkadot.io",
       "wss://kusama.api.onfinality.io/public-ws",
@@ -29,6 +30,7 @@ export default {
     }
   },
   kulupu: {
+    networkId: 16,
     endpoints: [
       "wss://rpc.kulupu.corepaper.org/ws"
     ]

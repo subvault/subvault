@@ -61,7 +61,7 @@ export async function create(networkName: string): Promise<ApiPromise> {
 
   const api = await ApiPromise.create({
     provider: wsProvider,
-    throwOnConnect: true,
+    // throwOnConnect: true,
     types: config[networkName].types,
   });
 

@@ -209,7 +209,7 @@ async function processCommand(control: Control, argv) {
       }
     },
     {
-      command: "payout list",
+      command: "payout list <last>",
       handle: async (matched) => {
         const wallets = db.accountsByTag("owned");
         const stashes = [];
@@ -219,21 +219,26 @@ async function processCommand(control: Control, argv) {
           stashAddresses.push(wallets[walletName].address);
         }
 
-        const allEras = await api.derive.staking.erasHistoric(true);
-        const stakerRewards = await api.derive.staking.stakerRewardsMulti(stashAddresses, false);
+        let allEras = await api.derive.staking.erasHistoric(false);
+        allEras.reverse();
+        if (matched.last != "all") {
+          allEras = allEras.slice(0, parseInt(matched.last));
+        }
 
-        for (const [index, stakerReward] of stakerRewards.entries()) {
-          const stash = stashes[index];
-          console.log(`Staking rewards for stash ${stash.name} (${stash.address}):`);
-          for (const reward of stakerReward) {
-            console.log(`Era: ${reward.era.toString()}, Total reward: ${formatBalance(reward.eraReward)}`);
+        for (const era of allEras) {
+          const stakerRewards = await api.derive.staking.stakerRewardsMultiEras(stashAddresses, [ era ]);
+          console.log(`Found ${stakerRewards.length} entries in era ${era}.`);
+          for (const [index, stakerReward] of stakerRewards.entries()) {
+            const stash = stashes[index];
+            for (const reward of stakerReward) {
+              console.log(`Stash ${stash.name} (${stash.address}) total reward: ${formatBalance(reward.eraReward)}`);
+            }
           }
-          console.log();
         }
       }
     },
     {
-      command: "payout execute using <address>",
+      command: "payout execute <last> using <address>",
       handle: async (matched) => {
         const wallets = db.accountsByTag("owned");
         const stashes = [];
@@ -243,15 +248,25 @@ async function processCommand(control: Control, argv) {
           stashAddresses.push(wallets[walletName].address);
         }
 
-        const allEras = await api.derive.staking.erasHistoric(true);
-        const stakerRewards = await api.derive.staking.stakerRewardsMulti(stashAddresses, false);
-        const claims = {};
+        let allEras = await api.derive.staking.erasHistoric(false);
+        allEras.reverse();
+        if (matched.last != "all") {
+          allEras = allEras.slice(0, parseInt(matched.last));
+        }
 
-        for (const [index, stakerReward] of stakerRewards.entries()) {
-          const stash = stashes[index];
-          for (const reward of stakerReward) {
-            claims[stash.address] = claims[stash.address] || [];
-            claims[stash.address].push(reward.era);
+        const claims = {};
+        for (const era of allEras) {
+          const stakerRewards = await api.derive.staking.stakerRewardsMultiEras(stashAddresses, [ era ]);
+          console.log(`Found ${stakerRewards.length} entries in era ${era}.`);
+          for (const [index, stakerReward] of stakerRewards.entries()) {
+            for (const reward of stakerReward) {
+              for (const validator of Object.keys(reward.validators)) {
+                claims[validator] = claims[validator] || [];
+                if (!claims[validator].includes(reward.era)) {
+                  claims[validator].push(reward.era);
+                }
+              }
+            }
           }
         }
 
@@ -317,13 +332,19 @@ async function main() {
     const networkName = await serverline.question("Enter the network name: ");
     const networkId = config[networkName]?.networkId;
 
-    if (networkId === undefined) {
-      throw new Error("Unknown network");
+    if (!networkId) {
+      throw new Error("unknown network");
     }
 
     db = Db.create(argv["_"][1], { networkId: networkId, networkName: networkName });
   } else if (argv["_"][0] === "open") {
     db = Db.open(argv["_"][1]);
+  } else {
+    console.log("subvault: Command-line wallet management utility for Substrate.");
+    console.log("");
+    console.log("open <path>        Open an existing wallet.");
+    console.log("create <path>      Create a new wallet.");
+    return
   }
 
   const api = await createAPI(db.networkName);

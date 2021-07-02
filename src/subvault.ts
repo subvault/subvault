@@ -333,12 +333,18 @@ async function main() {
     const networkId = config[networkName]?.networkId;
 
     if (!networkId) {
-      throw new Error("Unknown network");
+      throw new Error("unknown network");
     }
 
     db = Db.create(argv["_"][1], { networkId: networkId, networkName: networkName });
   } else if (argv["_"][0] === "open") {
     db = Db.open(argv["_"][1]);
+  } else {
+    console.log("subvault: Command-line wallet management utility for Substrate.");
+    console.log("");
+    console.log("open <path>        Open an existing wallet.");
+    console.log("create <path>      Create a new wallet.");
+    return
   }
 
   const api = await createAPI(db.networkName);

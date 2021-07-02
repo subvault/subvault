@@ -1,6 +1,6 @@
 {
   "name": "subvault",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "Command-line wallet for Substrate-based blockchains.",
   "main": "lib/index.js",
   "repository": "https://github.com/subvault/subvault",

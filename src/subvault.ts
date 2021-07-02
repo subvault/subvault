@@ -8,12 +8,13 @@ import { ApiPromise, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
 import Keyring from "@polkadot/keyring";
 import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
-import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import BN from "bn.js";
 import { Db } from "./db";
 import serverline from "./serverline";
 import config from "./api/config";
 import { create as createAPI } from "./api";
+import { Control } from "./control";
+import * as payoutCommand from "./command/payout";
 import { assert } from "console";
 import "regenerator-runtime/runtime";
 
@@ -77,52 +78,6 @@ function handleArgv(argv, handlers): any {
 
   console.log("Invalid command");
 };
-
-function formatCall(indentation, call) {
-  const indentString = " ".repeat(indentation);
-
-  if (call.toRawType && call.toRawType() === "Extrinsic") {
-    console.log(indentString + `${call.method.method.toString()}.${call.method.section.toString()}`);
-    for (const arg of call.method.args) {
-      formatCall(indentation + 2, arg);
-    }
-  } else if (call.toRawType && call.toRawType() === "Call") {
-    console.log(indentString + `${call.method.toString()}.${call.section.toString()}`);
-    for (const arg of call.args) {
-      formatCall(indentation + 2, arg);
-    }
-  } else if (call.toRawType && (call.toRawType() === "Balance" || call.toRawType() === "Compact<Balance>")) {
-    console.log(indentString + formatBalance(call));
-  } else if (call.toRawType && call.toRawType().startsWith("Vec")) {
-    console.log(indentString + "-");
-    call.forEach((element) => {
-      formatCall(indentation + 2, element);
-    })
-  } else if (Array.isArray(call)) {
-    console.log(indentString + "-");
-    for (const arg in call) {
-      formatCall(indentation + 2, arg);
-    }
-  } else {
-    console.log(indentString + call.toString());
-  }
-}
-
-async function signCallUsing(control: Control, call: SubmittableExtrinsic<"promise">, accountName: string) {
-  const { api, db, keyring } = control;
-  const wallet = db.accounts[accountName];
-  assert(wallet.type === "polkadotjs");
-  const pair = keyring.createFromJson(wallet.data);
-
-  formatCall(0, call);
-  console.log(`Signing the above extrinsic using ${accountName} (${wallet.address}).`)
-  const passphrase = await serverline.secret("Enter the passphrase: ");
-  pair.unlock(passphrase);
-
-  await call.signAndSend(pair, { nonce: -1 });
-
-  pair.lock();
-}
 
 async function processCommand(control: Control, argv) {
   const { api, db, keyring } = control;
@@ -211,80 +166,21 @@ async function processCommand(control: Control, argv) {
     {
       command: "payout list <last>",
       handle: async (matched) => {
-        const wallets = db.accountsByTag("owned");
-        const stashes = [];
-        const stashAddresses = [];
-        for (const walletName of Object.keys(wallets)) {
-          stashes.push(wallets[walletName]);
-          stashAddresses.push(wallets[walletName].address);
-        }
-
-        let allEras = await api.derive.staking.erasHistoric(false);
-        allEras.reverse();
-        if (matched.last != "all") {
-          allEras = allEras.slice(0, parseInt(matched.last));
-        }
-
-        for (const era of allEras) {
-          const stakerRewards = await api.derive.staking.stakerRewardsMultiEras(stashAddresses, [ era ]);
-          console.log(`Found ${stakerRewards.length} entries in era ${era}.`);
-          for (const [index, stakerReward] of stakerRewards.entries()) {
-            const stash = stashes[index];
-            for (const reward of stakerReward) {
-              console.log(`Stash ${stash.name} (${stash.address}) total reward: ${formatBalance(reward.eraReward)}`);
-            }
-          }
+        if (matched.last === "all") {
+          payoutCommand.list(control, "all");
+        } else {
+          payoutCommand.list(control, parseInt(matched.last));
         }
       }
     },
     {
       command: "payout execute <last> using <address>",
       handle: async (matched) => {
-        const wallets = db.accountsByTag("owned");
-        const stashes = [];
-        const stashAddresses = [];
-        for (const walletName of Object.keys(wallets)) {
-          stashes.push(wallets[walletName]);
-          stashAddresses.push(wallets[walletName].address);
+        if (matched.last === "all") {
+          payoutCommand.execute(control, "all", matched.address);
+        } else {
+          payoutCommand.execute(control, parseInt(matched.last), matched.address);
         }
-
-        let allEras = await api.derive.staking.erasHistoric(false);
-        allEras.reverse();
-        if (matched.last != "all") {
-          allEras = allEras.slice(0, parseInt(matched.last));
-        }
-
-        const claims = {};
-        for (const era of allEras) {
-          const stakerRewards = await api.derive.staking.stakerRewardsMultiEras(stashAddresses, [ era ]);
-          console.log(`Found ${stakerRewards.length} entries in era ${era}.`);
-          for (const [index, stakerReward] of stakerRewards.entries()) {
-            for (const reward of stakerReward) {
-              for (const validator of Object.keys(reward.validators)) {
-                claims[validator] = claims[validator] || [];
-                if (!claims[validator].includes(reward.era)) {
-                  claims[validator].push(reward.era);
-                }
-              }
-            }
-          }
-        }
-
-        const calls = [];
-        for (const stashAddress of Object.keys(claims)) {
-          for (const era of claims[stashAddress]) {
-            calls.push(api.tx.staking.payoutStakers(stashAddress, era));
-          }
-        }
-
-        const CHUNK = 5;
-        for (let i = 0; i < calls.length; i += CHUNK) {
-          const currentCalls = calls.slice(i, i + CHUNK);
-          const multiCall = api.tx.utility.batch(currentCalls);
-          await signCallUsing(control, multiCall, matched.address);
-        }
-
-        console.log("Finished payout execution.");
       }
     },
     {
@@ -301,7 +197,7 @@ async function processCommand(control: Control, argv) {
 
         const value = new BN(matched.value).mul(new BN(10).pow(new BN(api.registry.chainDecimals[0])));
         const call = api.tx.balances.transferKeepAlive(to, value);
-        await signCallUsing(control, call, matched.from);
+        await control.promptSign(call, matched.from);
 
         console.log("Finished send");
       },
@@ -316,12 +212,6 @@ async function processCommand(control: Control, argv) {
     },
   ]);
 };
-
-type Control = {
-  api: ApiPromise,
-  keyring: Keyring,
-  db: Db,
-}
 
 async function main() {
   const argv = yargsParser(process.argv.slice(2));
@@ -350,11 +240,7 @@ async function main() {
   const api = await createAPI(db.networkName);
   const keyring = new Keyring();
 
-  const control = {
-    api: api,
-    keyring: keyring,
-    db: db,
-  };
+  const control = new Control(api, keyring, db);
 
   while(true) {
     const input = await serverline.prompt();

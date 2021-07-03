@@ -61,7 +61,7 @@ export class Control {
       const pair = keyring.createFromJson(wallet.data);
       let passphrase: string;
 
-      if (wallet.data.passphraseCommand) {
+      if (wallet.config.passphraseCommand) {
         await serverline.secret("Press enter to continue: ");
         passphrase = execSync(wallet.config.passphraseCommand).toString().trim();
       } else {

@@ -12,5 +12,5 @@ export function getCurrentApplicationId(db: sqlite3.Database): number {
 };
 
 export function getMetadataByName(db: sqlite3.Database, name: string): any {
-  return JSON.parse(db.prepare("SELECT json from metadata where NAME = ?").get(name).json)
+  return JSON.parse(db.prepare("SELECT value FROM metadata WHERE name = ?").get(name).value)
 }

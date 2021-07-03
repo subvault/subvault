@@ -6,6 +6,7 @@ import { assert } from "console";
 import { Db } from "./db";
 import { formatBalance } from "@polkadot/util";
 import serverline from "./serverline";
+import { execSync } from "child_process";
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 
 function formatCall(indentation, call) {
@@ -52,16 +53,28 @@ export class Control {
   async promptSign(call: SubmittableExtrinsic<"promise">, accountName: string) {
     const { api, db, keyring } = this;
     const wallet = db.accounts[accountName];
-    assert(wallet.type === "polkadotjs");
-    const pair = keyring.createFromJson(wallet.data);
-  
+
     formatCall(0, call);
     console.log(`Signing the above extrinsic using ${accountName} (${wallet.address}).`)
-    const passphrase = await serverline.secret("Enter the passphrase: ");
-    pair.unlock(passphrase);
-  
-    await call.signAndSend(pair, { nonce: -1 });
-  
-    pair.lock();
+    
+    if (wallet.type === "polkadotjs") {
+      const pair = keyring.createFromJson(wallet.data);
+      let passphrase: string;
+
+      if (wallet.data.passphraseCommand) {
+        passphrase = execSync(wallet.data.passphraseCommand).toString().trim();
+      } else {
+        passphrase = await serverline.secret("Enter the passphrase: ");
+      }
+
+      pair.unlock(passphrase);
+      await call.signAndSend(pair, { nonce: -1 });
+      pair.lock();
+    } else {
+      throw new Error("Unsupported wallet");
+    }
+
+    assert(wallet.type === "polkadotjs");
+
   }
 }

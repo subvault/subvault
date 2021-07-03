@@ -10,7 +10,7 @@ type Migration = {
   scripts: string[],
 };
 
-export const LATEST_VERSION: number = 1;
+export const LATEST_VERSION: number = 2;
 
 const MIGRATIONS: Migration[] = [
   { fromVersion: 0, toVersion: 1, scripts: [
@@ -18,6 +18,11 @@ const MIGRATIONS: Migration[] = [
     "CREATE TABLE metadata (name TEXT PRIMARY KEY NOT NULL, json TEXT NOT NULL)",
     "CREATE TABLE tags (id INTEGER PRIMARY KEY, name TEXT NOT NULL UNIQUE)",
     "CREATE TABLE account_tags (account_id INTEGER REFERENCES accounts(id) ON DELETE CASCADE, tag_id INTEGER REFERENCES tags(id), PRIMARY KEY(account_id, tag_id))"
+  ] },
+  { fromVersion: 1, toVersion: 2, scripts: [
+    "ALTER TABLE accounts RENAME COLUMN json TO data",
+    "ALTER TABLE accounts ADD COLUMN config TEXT",
+    "ALTER TABLE metadata RENAME COLUMN json TO value"
   ] },
 ];
 

@@ -1,13 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2021 Wei Tang
 
-import Database, * as sqlite3 from "better-sqlite3";
-import readline from "readline";
 import yargsParser from "yargs-parser";
-import { ApiPromise, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
 import Keyring from "@polkadot/keyring";
-import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
 import BN from "bn.js";
 import { Db } from "./db";
 import serverline from "./serverline";
@@ -15,8 +11,6 @@ import config from "./api/config";
 import { create as createAPI } from "./api";
 import { Control } from "./control";
 import * as payoutCommand from "./command/payout";
-import { assert } from "console";
-import "regenerator-runtime/runtime";
 
 serverline.init({});
 
@@ -90,7 +84,7 @@ async function processCommand(control: Control, argv) {
         const name = matched.name;
         const data = { address: matched.address };
 
-        db.insertAccount(name, "external", data);
+        db.insertAccount("external", name, matched.address, data);
         db.addTag(name, "owned");
         console.log(`Imported external wallet ${address}`);
       }
@@ -105,7 +99,7 @@ async function processCommand(control: Control, argv) {
         const name = pair.meta.name as string;
         const address = pair.address.toString();
 
-        db.insertAccount(name, "polkadotjs", data);
+        db.insertAccount("polkadotjs", name, address, data);
         db.addTag(name, "owned");
         console.log(`Imported polkadotjs wallet ${address}`);
       }
@@ -118,13 +112,42 @@ async function processCommand(control: Control, argv) {
       }
     },
     {
+      command: "wallet config set <account> <name> <value>",
+      handle: async (matched) => {
+        db.setAccountConfig(matched.account, matched.name, JSON.parse(matched.value));
+      }
+    },
+    {
+      command: "wallet rename <old> <new>",
+      handle: async (matched) => {
+        const wallet = db.accounts[matched.old];
+
+        if (!wallet) {
+          throw new Error("unknown wallet");
+        }
+
+        if (wallet.type === "external") {
+          db.renameAccount(matched.old, matched.new);
+        } else if (wallet.type === "polkadotjs") {
+          db.renameAccount(matched.old, matched.new);
+          const data = wallet.data;
+          data.meta.name = matched.new;
+          db.setAccountData(matched.new, data);
+        } else {
+          throw new Error("unknown account type");
+        }
+
+        console.log(`Renamed wallet ${matched.old} to ${matched.new}.`);
+      }
+    },
+    {
       command: "addressbook add <name> <address>",
       handle: async (matched) => {
         const address = matched.address;
         const name = matched.name;
         const data = { address: matched.address };
 
-        db.insertAccount(name, "external", data);
+        db.insertAccount("external", name, matched.address, data);
         db.addTag(name, "addressbook");
         console.log(`Added addressbook ${address}`);
       }
@@ -238,7 +261,9 @@ async function main() {
   }
 
   const api = await createAPI(db.networkName);
-  const keyring = new Keyring();
+  const keyring = new Keyring({
+    ss58Format: db.networkId,
+  });
 
   const control = new Control(api, keyring, db);
 

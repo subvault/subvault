@@ -60,13 +60,14 @@ export class Db {
   get accounts(): any {
     const wallets = {};
 
-    const extWallets = this.raw.prepare("SELECT name, address, type, json FROM accounts").all();
+    const extWallets = this.raw.prepare("SELECT name, address, type, data FROM accounts").all();
     for (const wallet of extWallets) {
       wallets[wallet.name] = {
         type: wallet.type,
         name: wallet.name,
         address: wallet.address,
-        data: JSON.parse(wallet.json),
+        data: JSON.parse(wallet.data),
+        config: JSON.parse(wallet.config || "{}"),
       };
     }
 
@@ -74,40 +75,49 @@ export class Db {
   }
 
   accountsByTag(tagName: string): any {
-    const tagId = this.raw.prepare("SELECT id FROM tags where name = ?").get(tagName).id;
+    const tagId = this.raw.prepare("SELECT id FROM tags WHERE name = ?").get(tagName).id;
     if (!tagId) {
       return {};
     }
 
     const wallets = {};
-    const accounts = this.raw.prepare("SELECT name, address, type, json FROM accounts INNER JOIN account_tags ON account_tags.account_id = accounts.id AND account_tags.tag_id = ?")
+    const accounts = this.raw.prepare("SELECT name, address, type, data, config FROM accounts INNER JOIN account_tags ON account_tags.account_id = accounts.id AND account_tags.tag_id = ?")
       .all(tagId);
     for (const wallet of accounts) {
       wallets[wallet.name] = {
         type: wallet.type,
         name: wallet.name,
         address: wallet.address,
-        data: JSON.parse(wallet.json),
+        data: JSON.parse(wallet.data),
+        config: JSON.parse(wallet.config || "{}"),
       };
     }
     
     return wallets;
   }
 
-  insertAccount(name: string, type: string, data: any) {
-    let address: string;
-    if (type === "external") {
-      address = data.address;
-    } else if (type === "polkadotjs") {
-      address = data.address;
-    } else {
-      throw new Error("unsupported wallet type");
-    }
+  setAccountConfig(accountName: string, key: string, value: any) {
+    const config = JSON.parse(
+      this.raw.prepare("SELECT config FROM accounts WHERE name = ?").get(accountName).config
+    );
 
+    config[key] = value;
+    this.raw.prepare("UPDATE accounts SET config = ? WHERE name = ?").run(JSON.stringify(config), accountName);
+  }
+
+  insertAccount(type: string, name: string, address: string, data: any) {
     decodeAddress(address, this.networkId);
 
-    this.raw.prepare("INSERT INTO accounts (name, address, type, json) VALUES (?, ?, ?, ?)")
+    this.raw.prepare("INSERT INTO accounts (name, address, type, data) VALUES (?, ?, ?, ?)")
       .run(name, address, type, JSON.stringify(data));
+  }
+
+  renameAccount(oldName: string, newName: string) {
+    this.raw.prepare("UPDATE accounts SET name = ? WHERE name = ?").run(newName, oldName);
+  }
+
+  setAccountData(accountName: string, data: any) {
+    this.raw.prepare("UPDATE accounts SET data = ? WHERE name = ?").run(JSON.stringify(data), accountName);
   }
 
   deleteAccount(name: string) {
@@ -147,9 +157,9 @@ export class Db {
     db.raw.pragma(`application_id = ${APPLICATION_ID}`);
     db.migrate();
     db.raw.transaction(() => {
-      db.raw.prepare("INSERT INTO metadata (name, json) VALUES (?, ?)")
+      db.raw.prepare("INSERT INTO metadata (name, value) VALUES (?, ?)")
         .run("network_id", JSON.stringify(options.networkId));
-      db.raw.prepare("INSERT Into metadata (name, json) VALUES (?, ?)")
+      db.raw.prepare("INSERT Into metadata (name, value) VALUES (?, ?)")
         .run("network_name", JSON.stringify(options.networkName));
     })();
 

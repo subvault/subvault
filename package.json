@@ -9,7 +9,9 @@
   "babel": {
     "presets": [
       "@babel/preset-typescript",
-      "@babel/preset-env"
+      ["@babel/preset-env", {
+        "exclude": ["transform-regenerator"]
+      }]
     ]
   },
   "files": [
@@ -28,7 +30,6 @@
     "@babel/runtime": "^7.14.5",
     "@polkadot/api": "^4.16.2",
     "better-sqlite3": "^7.4.1",
-    "regenerator-runtime": "^0.13.7",
     "yargs-parser": "^20.2.7"
   },
   "devDependencies": {

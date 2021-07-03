@@ -1,6 +1,6 @@
 {
   "name": "subvault",
-  "version": "0.2.7",
+  "version": "0.3.0",
   "description": "Command-line wallet for Substrate-based blockchains.",
   "main": "lib/index.js",
   "repository": "https://github.com/subvault/subvault",
@@ -9,9 +9,14 @@
   "babel": {
     "presets": [
       "@babel/preset-typescript",
-      ["@babel/preset-env", {
-        "exclude": ["transform-regenerator"]
-      }]
+      [
+        "@babel/preset-env",
+        {
+          "exclude": [
+            "transform-regenerator"
+          ]
+        }
+      ]
     ]
   },
   "files": [

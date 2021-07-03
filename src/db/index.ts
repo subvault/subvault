@@ -60,7 +60,7 @@ export class Db {
   get accounts(): any {
     const wallets = {};
 
-    const extWallets = this.raw.prepare("SELECT name, address, type, data FROM accounts").all();
+    const extWallets = this.raw.prepare("SELECT name, address, type, data, config FROM accounts").all();
     for (const wallet of extWallets) {
       wallets[wallet.name] = {
         type: wallet.type,

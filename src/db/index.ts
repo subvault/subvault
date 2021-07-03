@@ -98,7 +98,7 @@ export class Db {
 
   setAccountConfig(accountName: string, key: string, value: any) {
     const config = JSON.parse(
-      this.raw.prepare("SELECT config FROM accounts WHERE name = ?").get(accountName).config
+      this.raw.prepare("SELECT config FROM accounts WHERE name = ?").get(accountName).config || "{}"
     );
 
     config[key] = value;

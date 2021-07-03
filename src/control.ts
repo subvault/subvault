@@ -63,7 +63,7 @@ export class Control {
 
       if (wallet.data.passphraseCommand) {
         await serverline.secret("Press enter to continue: ");
-        passphrase = execSync(wallet.data.passphraseCommand).toString().trim();
+        passphrase = execSync(wallet.config.passphraseCommand).toString().trim();
       } else {
         passphrase = await serverline.secret("Enter the passphrase: ");
       }

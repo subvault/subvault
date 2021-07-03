@@ -115,6 +115,7 @@ async function processCommand(control: Control, argv) {
       command: "wallet config set <account> <name> <value>",
       handle: async (matched) => {
         db.setAccountConfig(matched.account, matched.name, JSON.parse(matched.value));
+        console.log("Finished setting config.");
       }
     },
     {

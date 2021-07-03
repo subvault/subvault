@@ -191,9 +191,9 @@ async function processCommand(control: Control, argv) {
       command: "payout list <last>",
       handle: async (matched) => {
         if (matched.last === "all") {
-          payoutCommand.list(control, "all");
+          await payoutCommand.list(control, "all");
         } else {
-          payoutCommand.list(control, parseInt(matched.last));
+          await payoutCommand.list(control, parseInt(matched.last));
         }
       }
     },
@@ -201,9 +201,9 @@ async function processCommand(control: Control, argv) {
       command: "payout execute <last> using <address>",
       handle: async (matched) => {
         if (matched.last === "all") {
-          payoutCommand.execute(control, "all", matched.address);
+          await payoutCommand.execute(control, "all", matched.address);
         } else {
-          payoutCommand.execute(control, parseInt(matched.last), matched.address);
+          await payoutCommand.execute(control, parseInt(matched.last), matched.address);
         }
       }
     },

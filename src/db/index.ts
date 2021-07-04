@@ -8,9 +8,17 @@ import { APPLICATION_ID } from "./const";
 import { getCurrentVersion, getCurrentApplicationId, getMetadataByName } from "./util";
 import { decodeAddress } from "../util";
 
-type CreateVaultOptions = {
+export type CreateVaultOptions = {
   networkId: number,
   networkName: string,
+};
+
+export type Account = {
+  name: string,
+  address: string,
+  type: "polkadotjs" | "external",
+  data: any,
+  config: any,
 };
 
 export class Db {
@@ -57,7 +65,7 @@ export class Db {
     return addresses;
   }
 
-  get accounts(): any {
+  get accounts(): { [key: string]: Account } {
     const wallets = {};
 
     const extWallets = this.raw.prepare("SELECT name, address, type, data, config FROM accounts").all();
@@ -74,7 +82,7 @@ export class Db {
     return wallets;
   }
 
-  accountsByTag(tagName: string): any {
+  accountsByTag(tagName: string): { [key: string]: Account } {
     const tagId = this.raw.prepare("SELECT id FROM tags WHERE name = ?").get(tagName).id;
     if (!tagId) {
       return {};
@@ -96,7 +104,7 @@ export class Db {
     return wallets;
   }
 
-  accountsByType(typeName: string): any {
+  accountsByType(typeName: string): { [key: string]: Account } {
     const wallets = {};
     const accounts = this.raw.prepare("SELECT name, address, type, data, config FROM accounts WHERE type = ?")
       .all(typeName);

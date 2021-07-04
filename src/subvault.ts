@@ -210,15 +210,7 @@ async function processCommand(control: Control, argv) {
     {
       command: "transfer from <from> to <to> value <value>",
       handle: async (matched) => {
-        let to;
-
-        const wallet = db.accounts[matched.to];
-        if (wallet) {
-          to = wallet.address;
-        } else {
-          to = matched.to;
-        }
-
+        const to = control.resolveAddress(matched.to);
         const value = new BN(matched.value).mul(new BN(10).pow(new BN(api.registry.chainDecimals[0])));
         const call = api.tx.balances.transferKeepAlive(to, value);
         await control.promptSign(call, matched.from);
@@ -229,15 +221,7 @@ async function processCommand(control: Control, argv) {
     {
       command: "proxy list <address>",
       handle: async (matched) => {
-        const wallet = db.accounts[matched.address];
-        let address;
-
-        if (wallet) {
-          address = wallet.address;
-        } else {
-          address = matched.address;
-        }
-
+        const address = control.resolveAddress(matched.address);
         const proxies = await api.query.proxy.proxies(address);
         for (const def of proxies[0]) {
           console.log(`${def.delegate.toString()} (${def.proxyType.toString()})`);
@@ -247,16 +231,8 @@ async function processCommand(control: Control, argv) {
     {
       command: "proxy add for <proxied> address <address> type <type> delay <delay>",
       handle: async (matched) => {
-        const wallet = db.accounts[matched.address];
-        let address;
-  
-        if (wallet) {
-          address = wallet.address;
-        } else {
-          address = matched.address;
-        }
-
-        let call = api.tx.proxy.addProxy(address, matched.type, matched.delay);
+        const address = control.resolveAddress(matched.address);
+        const call = api.tx.proxy.addProxy(address, matched.type, matched.delay);
         await control.promptSign(call, matched.proxied);
         console.log("Finished");
       }

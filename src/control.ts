@@ -8,6 +8,7 @@ import { formatBalance } from "@polkadot/util";
 import serverline from "./serverline";
 import { execSync } from "child_process";
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
+import { isAddress } from "./util";
 
 function formatCall(indentation, call) {
   const indentString = " ".repeat(indentation);
@@ -48,6 +49,19 @@ export class Control {
     this.api = api;
     this.keyring = keyring;
     this.db = db;
+  }
+
+  resolveAddress(nameOrAddress: string): string {
+    if (isAddress(nameOrAddress, this.db.networkId)) {
+      return nameOrAddress;
+    } else {
+      const wallet = this.db.accounts[nameOrAddress];
+      if (wallet) {
+        return wallet.address;
+      } else {
+        throw new Error("unresolved address")
+      }
+    }
   }
 
   async promptSign(call: SubmittableExtrinsic<"promise">, accountName: string) {

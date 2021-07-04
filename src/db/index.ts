@@ -164,12 +164,12 @@ export class Db {
   removeTag(walletName: string, tagName: string) {
     const walletId = this.raw.prepare("SELECT id FROM accounts WHERE name = ?").get(walletName).id;
     if (!walletId) {
-      return
+      return;
     }
 
     const tagId = this.raw.prepare("SELECT id FROM tags WHERE name = ?").get(tagName).id;
     if (!tagId) {
-      return
+      return;
     }
 
     this.raw.prepare("DELETE FROM account_tags WHERE account_id = ? AND tag_id = ?").run(walletId, tagId);

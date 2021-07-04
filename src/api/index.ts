@@ -3,7 +3,7 @@
 
 import { ApiPromise, Keyring, WsProvider } from "@polkadot/api";
 import { formatBalance } from "@polkadot/util";
-import { defaults as addressDefaults } from '@polkadot/util-crypto/address/defaults';
+import { defaults as addressDefaults } from "@polkadot/util-crypto/address/defaults";
 import { TypeRegistry } from "@polkadot/types/create";
 import BN from "bn.js";
 import config from "./config";
@@ -11,16 +11,16 @@ import config from "./config";
 async function retrieve(api: ApiPromise): Promise<any> {
   const registry = new TypeRegistry();
 
-  const DEFAULT_DECIMALS = registry.createType('u32', 12);
-  const DEFAULT_SS58 = registry.createType('u32', addressDefaults.prefix);
-  const DEFAULT_AUX = ['Aux1', 'Aux2', 'Aux3', 'Aux4', 'Aux5', 'Aux6', 'Aux7', 'Aux8', 'Aux9'];
+  const DEFAULT_DECIMALS = registry.createType("u32", 12);
+  const DEFAULT_SS58 = registry.createType("u32", addressDefaults.prefix);
+  const DEFAULT_AUX = ["Aux1", "Aux2", "Aux3", "Aux4", "Aux5", "Aux6", "Aux7", "Aux8", "Aux9"];
 
   const [chainProperties, systemChain, systemChainType, systemName, systemVersion] = await Promise.all([
     api.rpc.system.properties(),
     api.rpc.system.chain(),
     api.rpc.system.chainType
       ? api.rpc.system.chainType()
-      : Promise.resolve(registry.createType('ChainType', 'Live')),
+      : Promise.resolve(registry.createType("ChainType", "Live")),
     api.rpc.system.name(),
     api.rpc.system.version(),
   ]);
@@ -37,7 +37,7 @@ async function retrieve(api: ApiPromise): Promise<any> {
 
   return {
     properties: properties,
-    systemChain: (systemChain || '<unknown>').toString(),
+    systemChain: (systemChain || "<unknown>").toString(),
     systemChainType,
     systemName: systemName.toString(),
     systemVersion: systemVersion.toString(),
@@ -79,7 +79,7 @@ export async function create(networkName: string): Promise<ApiPromise> {
   } = await retrieve(api);
   console.log(`chain: ${systemChain} (${systemChainType.toString()}), ${JSON.stringify(properties)}`);
 
-  registry.setChainProperties(registry.createType('ChainProperties', { ss58Format, tokenDecimals, tokenSymbol }));
+  registry.setChainProperties(registry.createType("ChainProperties", { ss58Format, tokenDecimals, tokenSymbol }));
   formatBalance.setDefaults({
     decimals: (tokenDecimals as BN[]).map((b) => b.toNumber()),
     unit: tokenSymbol[0].toString()

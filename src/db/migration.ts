@@ -10,7 +10,7 @@ type Migration = {
   scripts: string[],
 };
 
-export const LATEST_VERSION: number = 2;
+export const LATEST_VERSION = 2;
 
 const MIGRATIONS: Migration[] = [
   { fromVersion: 0, toVersion: 1, scripts: [
@@ -41,4 +41,4 @@ export function migrate(db: sqlite3.Database) {
       db.pragma(`user_version = ${migration.toVersion}`);
     })();
   }
-};
+}

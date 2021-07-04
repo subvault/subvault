@@ -6,41 +6,22 @@
   "repository": "https://github.com/subvault/subvault",
   "author": "Wei Tang <wei@that.world>",
   "license": "GPL-3.0",
-  "babel": {
-    "presets": [
-      "@babel/preset-typescript",
-      [
-        "@babel/preset-env",
-        {
-          "exclude": [
-            "transform-regenerator"
-          ]
-        }
-      ]
-    ]
-  },
   "files": [
     "LICENSE",
     "lib/**/*"
   ],
   "scripts": {
-    "prepack": "babel src --out-dir lib --extensions \".js,.ts,.tsx\" --source-maps inline"
+    "prepack": "tsc"
   },
   "bin": {
     "subvault": "./lib/index.js"
   },
   "dependencies": {
-    "@babel/core": "^7.14.5",
-    "@babel/register": "^7.14.5",
-    "@babel/runtime": "^7.14.5",
     "@polkadot/api": "^4.16.2",
     "better-sqlite3": "^7.4.1",
     "yargs-parser": "^20.2.7"
   },
   "devDependencies": {
-    "@babel/cli": "^7.14.5",
-    "@babel/preset-env": "^7.14.5",
-    "@babel/preset-typescript": "^7.14.5",
     "@types/better-sqlite3": "^5.4.1",
     "@types/node": "^15.12.2",
     "@types/yargs-parser": "^20.2.0",

@@ -9,11 +9,11 @@ import util from "util";
 
 const myEmitter = new EventEmitter();
 
-let rl = null;
+let rl: any;
 let stdoutMuted = false;
 let myPrompt = "> ";
-let completions = [];
-let promptResolves = [];
+let completions: string[] = [];
+let promptResolves: any = [];
 
 const collection = {
   stdout: new stream.Writable(),
@@ -29,7 +29,7 @@ function Serverline() {
     getPrompt: function() {
       return myPrompt;
     },
-    setPrompt: function(strPrompt) {
+    setPrompt: function(strPrompt: string) {
       myPrompt = strPrompt;
       rl.setPrompt(myPrompt);
     },
@@ -37,13 +37,13 @@ function Serverline() {
       return stdoutMuted;
     },
     setMuted: setMuted,
-    setCompletion: function(obj) {
+    setCompletion: function(obj: any) {
       completions = (typeof obj === "object") ? obj : completions;
     },
     getHistory: function() {
       return (rl.terminal) ? rl.history : [];
     },
-    setHistory: function(history) {
+    setHistory: function(history: any) {
       if (rl.terminal && Array.isArray(history)) {
         rl.history = history;
         return true;
@@ -78,7 +78,7 @@ function Serverline() {
 
       rl.on(eventName, listener);
     },
-    _debugModuleSupport: function(debug, ...args) {
+    _debugModuleSupport: function(debug: any, ...args: any[]) {
       debug.log = function log() {
         console.log(util.format(...args).toString());
       };
@@ -90,7 +90,7 @@ export default Serverline();
 
 let fixSIGINTonQuestion = false;
 
-function beforeTheLastLine(chunk) {
+function beforeTheLastLine(chunk: any) {
   const nbline = Math.ceil((rl.line.length + rl._prompt.length + 1) / rl.columns);
 
   let text = "";
@@ -101,7 +101,7 @@ function beforeTheLastLine(chunk) {
   return Buffer.from(text, "utf8");
 }
 
-function init(options) {
+function init(options: any) {
   if (typeof options === "string") {
     options = { prompt: options }; // eslint-disable-line no-param-reassign
   }
@@ -128,7 +128,7 @@ function init(options) {
     console.warn("You can try to define `options.forceTerminalContext = true`.");
   }
 
-  const consoleOptions = {};
+  const consoleOptions: any = {};
 
   (["colorMode", "inspectOptions", "ignoreErrors"]).forEach((val) => {
     if (typeof slOptions[val] !== "undefined") {
@@ -139,7 +139,7 @@ function init(options) {
   consoleOverwrite(consoleOptions);
   hiddenOverwrite();
 
-  rl.on("line", function(line) {
+  rl.on("line", function(line: any) {
     if (!stdoutMuted && rl.history && rl.terminal) {
       rl.history.push(line);
     }
@@ -164,7 +164,7 @@ function init(options) {
   });
   rl.prompt();
 
-  rl.input.on("data", function(char) { // fix CTRL+C on question
+  rl.input.on("data", function(char: any) { // fix CTRL+C on question
     if (char === "\u0003" && fixSIGINTonQuestion) {
       rl._onLine("");
       rl._refreshLine();
@@ -175,7 +175,7 @@ function init(options) {
   setMuted(true, null);
 }
 
-function setMuted(enabled, msg) {
+function setMuted(enabled: boolean, msg: any) {
   stdoutMuted = !!enabled;
 
   const message = (msg && typeof msg === "string") ? msg : "";
@@ -183,11 +183,11 @@ function setMuted(enabled, msg) {
   return stdoutMuted;
 }
 
-function secret(query): Promise<string> {
+function secret(query: any): Promise<string> {
   const toggleAfterAnswer = !stdoutMuted;
   stdoutMuted = true;
   const promise = new Promise((resolve, reject) => {
-    rl.question(query, (value) => {
+    rl.question(query, (value: any) => {
       if (rl.terminal) {
         rl.history = rl.history.slice(1);
       }
@@ -206,7 +206,7 @@ function secret(query): Promise<string> {
 function prompt(): Promise<string> {
   let promise = new Promise((resolve, reject) => {
     setMuted(false, null);
-    promptResolves.push((input) => {
+    promptResolves.push((input: any) => {
       setMuted(true, null);
       resolve(input);
     });
@@ -215,10 +215,10 @@ function prompt(): Promise<string> {
   return promise as Promise<string>;
 }
 
-function question(query): Promise<string> {
+function question(query: any): Promise<string> {
   const promise = new Promise((resolve, reject) => {
     setMuted(false, null);
-    rl.question(query, (value) => {
+    rl.question(query, (value: any) => {
       setMuted(true, null);
       resolve(value);
     });
@@ -247,7 +247,7 @@ function hiddenOverwrite() {
 
   rl._writeToOutput = (function(write) {
     // https://github.com/nodejs/node/blob/v10.0.0/lib/readline.js#L289 && ./v9.5.0/lib/readline.js#L442
-    return function _writeToOutput(argStringToWrite) {
+    return function _writeToOutput(argStringToWrite: any) {
       let stringToWrite = argStringToWrite;
 
       if (!stdoutMuted) {
@@ -263,14 +263,14 @@ function hiddenOverwrite() {
   })(rl._writeToOutput);
 }
 
-function consoleOverwrite(options) {
+function consoleOverwrite(options: any) {
   const original = {
     stdout: process.stdout,
     stderr: process.stderr
   };
 
-  Object.keys(collection).forEach((name) => {
-    collection[name]._write = function(chunk, encoding, callback) {
+  (Object.keys(collection) as ("stdout" | "stderr")[]).forEach((name: "stdout" | "stderr") => {
+    collection[name]._write = function(chunk: any, encoding: any, callback: any) {
       // https://github.com/nodejs/node/blob/v10.0.0/lib/readline.js#L178
       if (rl.terminal) {
         original[name].write(beforeTheLastLine(chunk), encoding, () => {
@@ -292,7 +292,7 @@ function consoleOverwrite(options) {
   console.Console = Console;
 }
 
-function completer(line) {
+function completer(line: any) {
   let hits = completions.filter(function(c) {
     return c.indexOf(line) === 0;
   });

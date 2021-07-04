@@ -10,7 +10,7 @@ import { execSync } from "child_process";
 import type { SubmittableExtrinsic } from '@polkadot/api/types';
 import { isAddress } from "./util";
 
-function formatCall(indentation, call) {
+function formatCall(indentation: number, call: any) {
   const indentString = " ".repeat(indentation);
 
   if (call.toRawType && call.toRawType() === "Extrinsic") {
@@ -27,7 +27,7 @@ function formatCall(indentation, call) {
     console.log(indentString + formatBalance(call));
   } else if (call.toRawType && call.toRawType().startsWith("Vec")) {
     console.log(indentString + "-");
-    call.forEach((element) => {
+    call.forEach((element: any) => {
       formatCall(indentation + 2, element);
     })
   } else if (Array.isArray(call)) {

@@ -3,6 +3,7 @@
 
 import { Control } from "../control";
 import { formatBalance } from "@polkadot/util";
+import { EraIndex } from "@polkadot/types/interfaces";
 
 export async function list(control: Control, last: number | "all") {
   const { db, api } = control;
@@ -50,7 +51,7 @@ export async function execute(control: Control, last: number | "all", usingAddre
     allEras = allEras.slice(0, last);
   }
 
-  const claims = {};
+  const claims: { [ key: string ]: EraIndex[] } = {};
   for (const era of allEras) {
     const stakerRewards = await api.derive.staking.stakerRewardsMultiEras(stashAddresses, [ era ]);
     console.log(`Found ${stakerRewards.length} entries in era ${era}.`);

@@ -12,18 +12,20 @@ import { create as createAPI } from "./api";
 import { Control } from "./control";
 import * as payoutCommand from "./command/payout";
 
+type Handler = {
+  command: string,
+  handle: (argv: { [key: string]: string }) => Promise<void>,
+};
+
 serverline.init({});
 
-function handleArgv(argv, handlers): any {
+function handleArgv(argv: yargsParser.Arguments, handlers: Handler[]): any {
   for (const handler of handlers) {
     let matched = true;
     let matchArgIndex = 0;
-    const matchedValue = {};
+    const matchedValue: { [key: string]: string } = {};
 
-    let handlerCommand = handler.command;
-    if (typeof handlerCommand === "string") {
-      handlerCommand = handlerCommand.split(" ");
-    }
+    const handlerCommand = handler.command.split(" ");
     handlerCommand.forEach((commandItem) => {
       if (!matched) {
         return;
@@ -73,7 +75,7 @@ function handleArgv(argv, handlers): any {
   console.log("Invalid command");
 };
 
-async function processCommand(control: Control, argv) {
+async function processCommand(control: Control, argv: yargsParser.Arguments) {
   const { api, db, keyring } = control;
 
   await handleArgv(argv, [
@@ -232,7 +234,7 @@ async function processCommand(control: Control, argv) {
       command: "proxy add for <proxied> address <address> type <type> delay <delay>",
       handle: async (matched) => {
         const address = control.resolveAddress(matched.address);
-        const call = api.tx.proxy.addProxy(address, matched.type, matched.delay);
+        const call = api.tx.proxy.addProxy(address, matched.type as any, matched.delay);
         await control.promptSign(call, matched.proxied);
         console.log("Finished");
       }

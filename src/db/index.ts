@@ -66,7 +66,7 @@ export class Db {
   }
 
   get accounts(): { [key: string]: Account } {
-    const wallets = {};
+    const wallets: { [key: string]: Account } = {};
 
     const extWallets = this.raw.prepare("SELECT name, address, type, data, config FROM accounts").all();
     for (const wallet of extWallets) {
@@ -88,7 +88,7 @@ export class Db {
       return {};
     }
 
-    const wallets = {};
+    const wallets: { [key: string]: Account } = {};
     const accounts = this.raw.prepare("SELECT name, address, type, data, config FROM accounts INNER JOIN account_tags ON account_tags.account_id = accounts.id AND account_tags.tag_id = ?")
       .all(tagId);
     for (const wallet of accounts) {
@@ -105,7 +105,7 @@ export class Db {
   }
 
   accountsByType(typeName: string): { [key: string]: Account } {
-    const wallets = {};
+    const wallets: { [ key: string]: Account } = {};
     const accounts = this.raw.prepare("SELECT name, address, type, data, config FROM accounts WHERE type = ?")
       .all(typeName);
     for (const wallet of accounts) {

@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (c) 2021 Wei Tang
 
-export default {
+type Config = {
+  [ networkName: string ]: {
+    networkId: number,
+    endpoints: string[],
+    types?: any,
+  }
+};
+
+const config: Config = {
   polkadot: {
     networkId: 0,
     endpoints: [
@@ -42,3 +50,5 @@ export default {
     ]
   }
 };
+
+export default config;

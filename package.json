@@ -11,6 +11,7 @@
     "lib/**/*"
   ],
   "scripts": {
+    "lint": "eslint",
     "prepack": "tsc"
   },
   "bin": {

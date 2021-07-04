@@ -96,6 +96,23 @@ export class Db {
     return wallets;
   }
 
+  accountsByType(typeName: string): any {
+    const wallets = {};
+    const accounts = this.raw.prepare("SELECT name, address, type, data, config FROM accounts WHERE type = ?")
+      .all(typeName);
+    for (const wallet of accounts) {
+      wallets[wallet.name] = {
+        type: wallet.type,
+        name: wallet.name,
+        address: wallet.address,
+        data: JSON.parse(wallet.data),
+        config: JSON.parse(wallet.config || "{}"),
+      };
+    }
+
+    return wallets;
+  }
+
   setAccountConfig(accountName: string, key: string, value: any) {
     const config = JSON.parse(
       this.raw.prepare("SELECT config FROM accounts WHERE name = ?").get(accountName).config || "{}"

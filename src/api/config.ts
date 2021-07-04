@@ -34,5 +34,11 @@ export default {
     endpoints: [
       "wss://rpc.kulupu.corepaper.org/ws"
     ]
+  },
+  rococo: {
+    networkId: 42,
+    endpoints: [
+      "wss://rococo-rpc.polkadot.io"
+    ]
   }
 };

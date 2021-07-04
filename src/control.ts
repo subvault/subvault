@@ -56,6 +56,37 @@ export class Control {
 
     formatCall(0, call);
     console.log(`Signing the above extrinsic using ${accountName} (${wallet.address}).`)
+
+    const proxies = await api.query.proxy.proxies(wallet.address);
+    const proxyWallets = [];
+
+    for (const def of proxies[0]) {
+      for (const account of Object.values(db.accounts) as any[]) {
+        if (def.delegate.toString() === account.address) {
+          proxyWallets.push({
+            address: account.address,
+            name: account.name,
+            proxyType: def.proxyType.toString(),
+          });
+        }
+      }
+    }
+
+    if (proxyWallets.length > 0) {
+      proxyWallets.forEach((def) => {
+        console.log(`${def.name}: ${def.address} (${def.proxyType})`);
+      });
+
+      const proxySelect = await serverline.question("Use an proxy for this extrinsic? ");
+
+      if (proxySelect === "") {
+        console.log("Not using a proxy.");
+      } else {
+        console.log(`Using proxy ${proxySelect}.`);
+        await this.promptSign(api.tx.proxy.proxy(wallet.address, null, call), proxySelect);
+        return
+      }
+    }
     
     if (wallet.type === "polkadotjs") {
       const pair = keyring.createFromJson(wallet.data);
@@ -74,8 +105,5 @@ export class Control {
     } else {
       throw new Error("Unsupported wallet");
     }
-
-    assert(wallet.type === "polkadotjs");
-
   }
 }

@@ -226,6 +226,41 @@ async function processCommand(control: Control, argv) {
         console.log("Finished send");
       },
     },
+    {
+      command: "proxy list <address>",
+      handle: async (matched) => {
+        const wallet = db.accounts[matched.address];
+        let address;
+
+        if (wallet) {
+          address = wallet.address;
+        } else {
+          address = matched.address;
+        }
+
+        const proxies = await api.query.proxy.proxies(address);
+        for (const def of proxies[0]) {
+          console.log(`${def.delegate.toString()} (${def.proxyType.toString()})`);
+        }
+      }
+    },
+    {
+      command: "proxy add for <proxied> address <address> type <type> delay <delay>",
+      handle: async (matched) => {
+        const wallet = db.accounts[matched.address];
+        let address;
+  
+        if (wallet) {
+          address = wallet.address;
+        } else {
+          address = matched.address;
+        }
+
+        let call = api.tx.proxy.addProxy(address, matched.type, matched.delay);
+        await control.promptSign(call, matched.proxied);
+        console.log("Finished");
+      }
+    },
 
     {
       command: "exit",

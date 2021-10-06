@@ -286,7 +286,7 @@ async function main() {
     const argv = yargsParser(input);
     try {
       await processCommand(control, argv);
-    } catch (err) {
+    } catch (err: any) {
       console.log(err.message);
     }
   }
